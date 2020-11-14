@@ -12,7 +12,6 @@ async def on_ready():
 async def on_message(message):
     if message.author != client.user:
         await message.channel.send("uwu")
-        #await client.send_message(message.channel, message.content[::-1])
 
 token = os.environ.get("DISCORD_BOT_SECRET")
 client.run(token)
