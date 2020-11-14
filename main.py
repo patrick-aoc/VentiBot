@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import itertools
+from src.utils.keep_alive import keep_alive
 import math
 import random
 import os
@@ -289,6 +290,8 @@ class Music(commands.Cog):
         """Joins a voice channel."""
 
         destination = ctx.author.voice.channel
+        await ctx.send("Joining your call, Traveler :blush:")
+        await ctx.send("What song would you like me to play for you? :pleading_face:")
         if ctx.voice_state.voice:
             await ctx.voice_state.voice.move_to(destination)
             return
@@ -492,7 +495,7 @@ class Music(commands.Cog):
             if ctx.voice_client.channel != ctx.author.voice.channel:
                 raise commands.CommandError('Bot is already in a voice channel.')
 
-
+keep_alive()
 bot = commands.Bot('venti.', description='Yet another music bot.')
 bot.add_cog(Music(bot))
 
