@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "repl_python3_VentiBot"
 version = "0.1.0"
-description = ""
+description = "Venti Bot"
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
@@ -10,6 +10,7 @@ discord = "^1.0.1"
 flask = "^1.1.2"
 wavelink = "^0.9.6"
 youtube-dl = "^2020.11.12"
+pynacl = "^1.4.0"
 
 [tool.poetry.dev-dependencies]
 
