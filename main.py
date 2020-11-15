@@ -19,5 +19,3 @@ async def on_ready():
     print('Logged in as:\n{0.user.name}\n{0.user.id}'.format(bot))
 
 bot.run(os.getenv("TOKEN"))
-
-# &api_key=8d40e97f4851737d5d0e23ae039d57081135713c1f8b18c8e1dca8d8e95177b5&user_id=668191
