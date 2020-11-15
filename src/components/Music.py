@@ -38,10 +38,9 @@ class Music(commands.Cog):
     @commands.command(name='join', invoke_without_subcommand=True)
     async def _join(self, ctx: commands.Context):
         """Joins a voice channel."""
-
+        await ctx.send("Joining your call, Traveler-dono :blush:")
         destination = ctx.author.voice.channel
-        await ctx.send("Joining your call, Traveler :blush:")
-        await ctx.send("What song would you like me to play for you? :pleading_face:")
+
         if ctx.voice_state.voice:
             await ctx.voice_state.voice.move_to(destination)
             return
@@ -67,13 +66,13 @@ class Music(commands.Cog):
         ctx.voice_state.voice = await destination.connect()
 
     @commands.command(name='leave', aliases=['disconnect'])
-    @commands.has_permissions(manage_guild=True)
     async def _leave(self, ctx: commands.Context):
         """Clears the queue and leaves the voice channel."""
 
         if not ctx.voice_state.voice:
-            return await ctx.send('Not connected to any voice channel.')
+            return await ctx.send('Baka!! I\'m not connected to any channel! :yum:')
 
+        await ctx.send('Sayonara, Traveler-dono! :blush:')
         await ctx.voice_state.stop()
         del self.voice_states[ctx.guild.id]
 
@@ -160,7 +159,7 @@ class Music(commands.Cog):
         """
 
         if len(ctx.voice_state.songs) == 0:
-            return await ctx.send('Empty queue.')
+            return await ctx.send('The queue is empty, Traveler-dono :relaxed:')
 
         items_per_page = 10
         pages = math.ceil(len(ctx.voice_state.songs) / items_per_page)
@@ -181,7 +180,7 @@ class Music(commands.Cog):
         """Shuffles the queue."""
 
         if len(ctx.voice_state.songs) == 0:
-            return await ctx.send('Empty queue.')
+            return await ctx.send('The queue is empty, Traveler-dono :relaxed:')
 
         ctx.voice_state.songs.shuffle()
         await ctx.message.add_reaction('✅')
@@ -191,7 +190,7 @@ class Music(commands.Cog):
         """Removes a song from the queue at a given index."""
 
         if len(ctx.voice_state.songs) == 0:
-            return await ctx.send('Empty queue.')
+            return await ctx.send('There is nothing to remove, Traveler-dono :relaxed:')
 
         ctx.voice_state.songs.remove(index - 1)
         await ctx.message.add_reaction('✅')
@@ -204,7 +203,7 @@ class Music(commands.Cog):
         """
 
         if not ctx.voice_state.is_playing:
-            return await ctx.send('Nothing being played at the moment.')
+            return await ctx.send('You haven\'t told me to play anything, Traveler-dono... :point_right: :point_left:')
 
         # Inverse boolean value to loop and unloop.
         ctx.voice_state.loop = not ctx.voice_state.loop
@@ -227,20 +226,27 @@ class Music(commands.Cog):
         async with ctx.typing():
             try:
                 source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
-            except YTDLError as e:
-                await ctx.send('An error occurred while processing this request: {}'.format(str(e)))
+            except Exception as e:
+                await ctx.send('Gomenasai, Traveler-dono! Something happened :cry: ... {}'.format(str(e)))
             else:
                 song = Song(source)
 
                 await ctx.voice_state.songs.put(song)
-                await ctx.send('Enqueued {}'.format(str(source)))
+                await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
 
     @_join.before_invoke
     @_play.before_invoke
+    @_loop.before_invoke
+    @_queue.before_invoke
+    @_shuffle.before_invoke
+    @_remove.before_invoke
+    @_leave.before_invoke
     async def ensure_voice_state(self, ctx: commands.Context):
         if not ctx.author.voice or not ctx.author.voice.channel:
-            raise commands.CommandError('You are not connected to any voice channel.')
+            await ctx.send('Traveler-dono! You aren\'t connected to any voice channel :stuck_out_tongue:')
+            raise
 
         if ctx.voice_client:
             if ctx.voice_client.channel != ctx.author.voice.channel:
-                raise commands.CommandError('Bot is already in a voice channel.')
+                await ctx.send('Gomenasai, Traveler-dono! I\'m currently in the channel {}. Join that channel if you\'d like to use me, or wait until I\'m available :pleading_face:'.format(str(ctx.voice_client.channel)))
+                raise
