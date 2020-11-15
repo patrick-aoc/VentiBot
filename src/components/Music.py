@@ -56,7 +56,8 @@ class Music(commands.Cog):
         """
 
         if not channel and not ctx.author.voice:
-            raise VoiceError('You are neither connected to a voice channel nor specified a channel to join.')
+            await ctx.send('Traveler-dono! You aren\'t connected to any voice channel :stuck_out_tongue:')
+            raise
 
         destination = channel or ctx.author.voice.channel
         if ctx.voice_state.voice:
@@ -81,13 +82,13 @@ class Music(commands.Cog):
         """Sets the volume of the player."""
 
         if not ctx.voice_state.is_playing:
-            return await ctx.send('Nothing being played at the moment.')
+            return await ctx.send('Nothing is playing at the moment, Traveler-dono :relaxed:.')
 
         if 0 > volume > 100:
-            return await ctx.send('Volume must be between 0 and 100')
+            return await ctx.send('Traveler-dono! The volume must be between 0 and 100! :sad:')
 
         ctx.voice_state.volume = volume / 100
-        await ctx.send('Volume of the player set to {}%'.format(volume))
+        await ctx.send('Okay Traveler-dono, the volume of the player has been set to {}%'.format(volume))
 
     @commands.command(name='now', aliases=['current', 'playing'])
     async def _now(self, ctx: commands.Context):
@@ -131,7 +132,7 @@ class Music(commands.Cog):
         """
 
         if not ctx.voice_state.is_playing:
-            return await ctx.send('Not playing any music right now...')
+            return await ctx.send('Not playing any music right now, Traveler-dono...')
 
         voter = ctx.message.author
         if voter == ctx.voice_state.current.requester:
