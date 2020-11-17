@@ -97,7 +97,7 @@ class Music(commands.Cog):
         await ctx.send(embed=ctx.voice_state.current.create_embed())
 
     @commands.command(name='pause')
-    @commands.has_permissions(manage_guild=True)
+    #@commands.has_permissions(manage_guild=True)
     async def _pause(self, ctx: commands.Context):
         """Pauses the currently playing song."""
 
@@ -106,7 +106,7 @@ class Music(commands.Cog):
             await ctx.message.add_reaction('⏯')
 
     @commands.command(name='resume')
-    @commands.has_permissions(manage_guild=True)
+    #@commands.has_permissions(manage_guild=True)
     async def _resume(self, ctx: commands.Context):
         """Resumes a currently paused song."""
 
@@ -115,7 +115,7 @@ class Music(commands.Cog):
             await ctx.message.add_reaction('⏯')
 
     @commands.command(name='stop')
-    @commands.has_permissions(manage_guild=True)
+    #@commands.has_permissions(manage_guild=True)
     async def _stop(self, ctx: commands.Context):
         """Stops playing song and clears the queue."""
 
@@ -226,7 +226,14 @@ class Music(commands.Cog):
 
         async with ctx.typing():
             try:
-                source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
+                if ("&list=" in search):
+                  await YTDLSource.parse(ctx, search)
+                  # we will need to parse a playlist
+                  playlists = []
+                  source = None
+                else:
+                  source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
+
             except Exception as e:
                 await ctx.send('Gomenasai, Traveler-dono! Something happened :cry: ... {}'.format(str(e)))
             else:

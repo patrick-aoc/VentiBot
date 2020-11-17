@@ -2,8 +2,11 @@ import asyncio
 import discord
 import functools
 import youtube_dl
+import requests
 
+from bs4 import BeautifulSoup
 from discord.ext import commands
+
 
 class YTDLError(Exception):
     pass
@@ -98,6 +101,12 @@ class YTDLSource(discord.PCMVolumeTransformer):
                     raise YTDLError('Couldn\'t retrieve any matches for `{}`'.format(webpage_url))
 
         return cls(ctx, discord.FFmpegPCMAudio(info['url'], **cls.FFMPEG_OPTIONS), data=info)
+
+    @classmethod
+    async def parse(self, ctx: commands.Context, search: str):
+      page = requests.get("https://www.googleapis.com/youtube/v3/playlists")
+      
+      return None
 
     @staticmethod
     def parse_duration(duration: int):
