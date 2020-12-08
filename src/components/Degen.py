@@ -34,7 +34,7 @@ class Degen(commands.Cog):
 
       # Check if user tried to search for a male
       if (lowered in constants.genshin_males):
-        await ctx.send("Traveler-dono... are you perhaps... a homosexual? :face_with_hand_over_mouth:")
+        await ctx.send("Traveler-dono... are you perhaps...? :face_with_hand_over_mouth:")
         return
 
       pid = randrange(100)
