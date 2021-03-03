@@ -220,17 +220,32 @@ class Music(commands.Cog):
         This command automatically searches from various sites if no URL is provided.
         A list of these sites can be found here: https://rg3.github.io/youtube-dl/supportedsites.html
         """
-
         if not ctx.voice_state.voice:
             await ctx.invoke(self._join)
 
         async with ctx.typing():
             try:
-                if ("&list=" in search):
-                  await YTDLSource.parse(ctx, search)
+                if ("playlist" in search):
+
                   # we will need to parse a playlist
-                  playlists = []
-                  source = None
+                  entries = await YTDLSource.get_playlist_entries(ctx, search, loop=self.bot.loop)
+
+                  await ctx.send('Hai hai! :blush: Time to queue up some songs...')
+                  count = 0
+                  for entry in entries:
+
+                    try:
+                      source = await YTDLSource.create_source(ctx, entry["id"], loop=self.bot.loop, using_id=True)
+
+                      song = Song(source)
+                      await ctx.voice_state.songs.put(song)
+                    except Exception:
+                        await ctx.send("Couldn't queue up %s" % (entry['title']))
+                        continue
+                    count += 1
+
+                  await ctx.send('Queued up {} songs!'.format(count))
+                  
                 else:
                   source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
 

@@ -19,7 +19,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
         'audioformat': 'mp3',
         'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
         'restrictfilenames': True,
-        'noplaylist': True,
+        'noplaylist': False,
+        'yesplaylist': True,
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
@@ -30,13 +31,19 @@ class YTDLSource(discord.PCMVolumeTransformer):
     }
 
     FFMPEG_OPTIONS = {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        'before_options':
+        '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
         'options': '-vn',
     }
 
     ytdl = youtube_dl.YoutubeDL(YTDL_OPTIONS)
 
-    def __init__(self, ctx: commands.Context, source: discord.FFmpegPCMAudio, *, data: dict, volume: float = 0.5):
+    def __init__(self,
+                 ctx: commands.Context,
+                 source: discord.FFmpegPCMAudio,
+                 *,
+                 data: dict,
+                 volume: float = 0.5):
         super().__init__(source, volume)
 
         self.requester = ctx.author
@@ -62,51 +69,80 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return '**{0.title}** by **{0.uploader}**'.format(self)
 
     @classmethod
-    async def create_source(cls, ctx: commands.Context, search: str, *, loop: asyncio.BaseEventLoop = None):
+    async def create_source(cls,
+                            ctx: commands.Context,
+                            search: str,
+                            *,
+                            loop: asyncio.BaseEventLoop = None,
+                            using_id = False):
         loop = loop or asyncio.get_event_loop()
+        song_url = ""
 
-        partial = functools.partial(cls.ytdl.extract_info, search, download=False, process=False)
-        data = await loop.run_in_executor(None, partial)
+        if not using_id:
+          partial = functools.partial(cls.ytdl.extract_info,
+                                      search,
+                                      download=False,
+                                      process=False)
+          data = await loop.run_in_executor(None, partial)
 
-        if data is None:
-            raise YTDLError('Couldn\'t find anything that matches `{}`'.format(search))
-
-        if 'entries' not in data:
-            process_info = data
+          if data is None:
+              raise YTDLError(
+                  'Couldn\'t find anything that matches `{}`'.format(search))
+          song_url = data['webpage_url']
         else:
-            process_info = None
-            for entry in data['entries']:
-                if entry:
-                    process_info = entry
-                    break
+          song_url =  "https://youtu.be/%s" % (search)
 
-            if process_info is None:
-                raise YTDLError('Couldn\'t find anything that matches `{}`'.format(search))
-
-        webpage_url = process_info['webpage_url']
-        partial = functools.partial(cls.ytdl.extract_info, webpage_url, download=False)
+        partial = functools.partial(cls.ytdl.extract_info,
+                                    song_url,
+                                    download=False)
         processed_info = await loop.run_in_executor(None, partial)
 
         if processed_info is None:
-            raise YTDLError('Couldn\'t fetch `{}`'.format(webpage_url))
+            raise YTDLError('Couldn\'t fetch `{}`'.format(song_url))
 
         if 'entries' not in processed_info:
-            info = processed_info
+           info = processed_info
         else:
-            info = None
-            while info is None:
-                try:
-                    info = processed_info['entries'].pop(0)
-                except IndexError:
-                    raise YTDLError('Couldn\'t retrieve any matches for `{}`'.format(webpage_url))
-
-        return cls(ctx, discord.FFmpegPCMAudio(info['url'], **cls.FFMPEG_OPTIONS), data=info)
+           info = None
+           while info is None:
+              try:
+                  info = processed_info['entries'].pop(0)
+              except IndexError:
+                  raise YTDLError(
+                      'Couldn\'t retrieve any matches for `{}`'.format(
+                      song_url))
+                          
+        return cls(ctx,
+              discord.FFmpegPCMAudio(info['url'], **cls.FFMPEG_OPTIONS),
+              data=info)
 
     @classmethod
-    async def parse(self, ctx: commands.Context, search: str):
-      page = requests.get("https://www.googleapis.com/youtube/v3/playlists")
-      
-      return None
+    async def get_playlist_entries(cls,
+                            ctx: commands.Context,
+                            search: str,
+                            *,
+                            loop: asyncio.BaseEventLoop = None):
+        loop = loop or asyncio.get_event_loop()
+        partial = functools.partial(cls.ytdl.extract_info,
+                                    search,
+                                    download=False,
+                                    process=False)
+        data = await loop.run_in_executor(None, partial)
+        p_list_songs = []
+
+        if data is None:
+            raise YTDLError(
+                'Couldn\'t find anything that matches `{}`'.format(search))
+        
+        if 'entries' in data:
+            for entry in data['entries']:
+                if entry:
+                    p_list_songs.append(entry)
+                  
+            if not p_list_songs:
+                raise YTDLError(
+                    'Couldn\'t find anything that matches `{}`'.format(search))
+        return p_list_songs
 
     @staticmethod
     def parse_duration(duration: int):
