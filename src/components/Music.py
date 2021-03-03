@@ -1,22 +1,24 @@
 import math
+import os
 import discord
 
 from discord.ext import commands
 from src.songs.YTDL import YTDLSource, YTDLError
 from src.songs.Songs import Song
+from src.songs.Spotify import SpotifyTool
 from src.components.Voice import VoiceState, VoiceError
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.voice_states = {}
+        self.spotify = SpotifyTool(os.getenv("SPOTIFY_ID"), os.getenv("SPOTIFY_CLIENT_SECRET"))
 
     def get_voice_state(self, ctx: commands.Context):
         state = self.voice_states.get(ctx.guild.id)
         if not state:
             state = VoiceState(self.bot, ctx)
             self.voice_states[ctx.guild.id] = state
-
         return state
 
     def cog_unload(self):
@@ -224,38 +226,47 @@ class Music(commands.Cog):
             await ctx.invoke(self._join)
 
         async with ctx.typing():
-            try:
-                if ("playlist" in search):
 
-                  # we will need to parse a playlist
-                  entries = await YTDLSource.get_playlist_entries(ctx, search, loop=self.bot.loop)
+            # We are parsing a Spotify-related link
+            if ("open.spotify.com" in search):
+                song_info = await self.spotify.get_song_info(search)
+                source = await YTDLSource.create_source(ctx, "%s %s" % (song_info["name"], song_info["artist"]), loop=self.bot.loop)
 
-                  await ctx.send('Hai hai! :blush: Time to queue up some songs...')
-                  count = 0
-                  for entry in entries:
-
-                    try:
-                      source = await YTDLSource.create_source(ctx, entry["id"], loop=self.bot.loop, using_id=True)
-
-                      song = Song(source)
-                      await ctx.voice_state.songs.put(song)
-                    except Exception:
-                        await ctx.send("Couldn't queue up %s" % (entry['title']))
-                        continue
-                    count += 1
-
-                  await ctx.send('Queued up {} songs!'.format(count))
-                  
-                else:
-                  source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
-
-            except Exception as e:
-                await ctx.send('Gomenasai, Traveler-dono! Something happened :cry: ... {}'.format(str(e)))
-            else:
                 song = Song(source)
-
                 await ctx.voice_state.songs.put(song)
                 await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
+
+            # We are parsing YouTube playlists
+            else:
+                try:
+                    if ("playlist" in search):
+
+                      # we will need to parse a playlist
+                      entries = await YTDLSource.get_playlist_entries(ctx, search, loop=self.bot.loop)
+                      await ctx.send('Hai hai! :blush: Time to queue up some songs...')
+                      count = 0
+                      for entry in entries:
+                        try:
+                          source = await YTDLSource.create_source(ctx, entry["id"], loop=self.bot.loop, using_id=True)
+
+                          song = Song(source)
+                          await ctx.voice_state.songs.put(song)
+                        except Exception:
+                            await ctx.send("Couldn't queue up %s" % (entry['title']))
+                            continue
+                        count += 1
+                      await ctx.send('Queued up {} songs!'.format(count))
+                      
+                    else:
+                      source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
+
+                    song = Song(source)
+
+                    await ctx.voice_state.songs.put(song)
+                    await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
+
+                except Exception as e:
+                    await ctx.send('Gomenasai, Traveler-dono! Something happened :cry: ... {}'.format(str(e)))  
 
     @_join.before_invoke
     @_play.before_invoke

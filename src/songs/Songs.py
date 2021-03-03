@@ -21,9 +21,7 @@ class Song:
                  .add_field(name='Uploader', value='[{0.source.uploader}]({0.source.uploader_url})'.format(self))
                  .add_field(name='URL', value='[Click]({0.source.url})'.format(self))
                  .set_thumbnail(url=self.source.thumbnail))
-
         return embed
-
 
 class SongQueue(asyncio.Queue):
     def __getitem__(self, item):
