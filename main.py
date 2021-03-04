@@ -10,7 +10,7 @@ from src.utils.keep_alive import keep_alive
 youtube_dl.utils.bug_reports_message = lambda: ''
 
 keep_alive()
-bot = commands.Bot(command_prefix=['Venti-san! ', '++ '], description='Kaze da!')
+bot = commands.Bot(command_prefix=['Venti-san! ', '++', 'Venti!'], description='Kaze da!')
 bot.add_cog(Music(bot))
 bot.add_cog(Degen(bot))
 

@@ -226,15 +226,39 @@ class Music(commands.Cog):
             await ctx.invoke(self._join)
 
         async with ctx.typing():
-
             # We are parsing a Spotify-related link
             if ("open.spotify.com" in search):
-                song_info = await self.spotify.get_song_info(search)
-                source = await YTDLSource.create_source(ctx, "%s %s" % (song_info["name"], song_info["artist"]), loop=self.bot.loop)
+                song_info = ""
 
-                song = Song(source)
-                await ctx.voice_state.songs.put(song)
-                await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
+                if ("playlist" in search):
+                    entries = await self.spotify.get_playlist_songs(search)
+                    await ctx.send('Hai hai! :blush: Time to queue up some songs...')
+                    count = 0
+                    first_song = None
+
+                    for entry in entries:
+                      try:
+                        source = await YTDLSource.create_source(ctx, "%s %s" % (entry["name"], entry["artist"]), loop=self.bot.loop)
+                        
+                        if not first_song:
+                          first_song = source
+
+                        song = Song(source)
+                        await ctx.voice_state.songs.put(song)
+                      except Exception:
+                          await ctx.send("Couldn't queue up %s" % (entry['name']))
+                          continue
+                      count += 1
+
+                    await ctx.send('Queued up {} songs!'.format(count))
+                    await ctx.send('Aaaand now I should be playing {} !'.format(str(first_song)))
+                else:
+                  song_info = await self.spotify.get_song_info(search)
+                  source = await YTDLSource.create_source(ctx, "%s %s" % (song_info["name"], song_info["artist"]), loop=self.bot.loop)
+
+                  song = Song(source)
+                  await ctx.voice_state.songs.put(song)
+                  await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
 
             # We are parsing YouTube playlists
             else:
@@ -245,9 +269,14 @@ class Music(commands.Cog):
                       entries = await YTDLSource.get_playlist_entries(ctx, search, loop=self.bot.loop)
                       await ctx.send('Hai hai! :blush: Time to queue up some songs...')
                       count = 0
+                      first_song = None
+
                       for entry in entries:
                         try:
                           source = await YTDLSource.create_source(ctx, entry["id"], loop=self.bot.loop, using_id=True)
+                        
+                          if not first_song:
+                            first_song = source
 
                           song = Song(source)
                           await ctx.voice_state.songs.put(song)
@@ -255,15 +284,15 @@ class Music(commands.Cog):
                             await ctx.send("Couldn't queue up %s" % (entry['title']))
                             continue
                         count += 1
+
                       await ctx.send('Queued up {} songs!'.format(count))
-                      
+                      await ctx.send('Aaaand now I should be playing {} !'.format(str(first_song)))
                     else:
                       source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
+                      song = Song(source)
 
-                    song = Song(source)
-
-                    await ctx.voice_state.songs.put(song)
-                    await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
+                      await ctx.voice_state.songs.put(song)
+                      await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
 
                 except Exception as e:
                     await ctx.send('Gomenasai, Traveler-dono! Something happened :cry: ... {}'.format(str(e)))  

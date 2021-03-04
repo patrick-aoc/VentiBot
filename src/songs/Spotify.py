@@ -23,4 +23,15 @@ class SpotifyTool:
       return info
 
     
-  
+  async def get_playlist_songs(self, search):
+
+    playlist = self.sp.playlist(search)
+    songs = []
+
+    for song in playlist["tracks"]["items"]:
+      song_name = song["track"]["name"]
+      song_artist = song["track"]["artists"][0]["name"]
+      song_pair = {"name": song_name, "artist": song_artist}
+      songs.append(song_pair)
+
+    return songs
