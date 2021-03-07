@@ -16,11 +16,6 @@ class Degen(commands.Cog):
     @commands.command(name='gimme')
     async def _lewd(self, ctx: commands.Context, *, search = 'Venti'):
       lowered = search.lower()
-
-      # Check if user was trying to search for a loli
-      if (lowered in constants.genshin_questionable):
-        await ctx.send("Traveler-dono...seek help :cry:")
-        return
       
       # Check if user tried to do shady stuff
       if (not lowered.isalnum()):
@@ -30,11 +25,6 @@ class Degen(commands.Cog):
       # Check if user tried to invoke this command in the appropriate channel
       if (ctx.message.channel.name not in constants.allowed_channels):
         await ctx.send("Traveler-dono, baka!! This isn't the right channel for this kind of stuff... :confounded: :point_right: :point_left:")
-        return
-
-      # Check if user tried to search for a male
-      if (lowered in constants.genshin_males):
-        await ctx.send("Traveler-dono... are you perhaps...? :face_with_hand_over_mouth:")
         return
 
       pid = randrange(100)

@@ -14,6 +14,8 @@ pynacl = "^1.4.0"
 beautifulsoup4 = "^4.9.3"
 lxml = "^4.6.1"
 spotipy = "^2.17.1"
+aiocron = "^1.4"
+firebase-admin = "latest"
 
 [tool.poetry.dev-dependencies]
 

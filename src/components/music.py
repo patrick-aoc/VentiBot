@@ -6,7 +6,7 @@ from discord.ext import commands
 from src.songs.YTDL import YTDLSource, YTDLError
 from src.songs.Songs import Song
 from src.songs.Spotify import SpotifyTool
-from src.components.Voice import VoiceState, VoiceError
+from src.components.voice import VoiceState, VoiceError
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
