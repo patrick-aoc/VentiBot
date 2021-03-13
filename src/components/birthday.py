@@ -42,7 +42,6 @@ class Birthday(commands.Cog):
 
     async def _add_bd(self, ctx: commands.Context, birthday, celebrant):
       if "/" in birthday or "-" in birthday:
-        print("owo")
         delim = "/" if "/" in birthday else "-"
 
         try:
