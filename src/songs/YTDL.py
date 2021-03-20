@@ -79,16 +79,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         song_url = ""
 
         if not using_id:
-          partial = functools.partial(cls.ytdl.extract_info,
-                                      search,
-                                      download=False,
-                                      process=False)
-          data = await loop.run_in_executor(None, partial)
-
-          if data is None:
-              raise YTDLError(
-                  'Couldn\'t find anything that matches `{}`'.format(search))
-          song_url = data['webpage_url']
+          song_url = search
         else:
           song_url =  "https://youtu.be/%s" % (search)
 

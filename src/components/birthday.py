@@ -15,7 +15,7 @@ class Birthday(commands.Cog):
     def __init__(self, bot: commands.Bot, firebase_db):
         self.bot = bot
         self.voice_states = {}
-        self.firebase_db = firebase_db.get_bday_ref()
+        self.firebase_db = firebase_db
 
     @commands.command(name='birthday', invoke_without_subcommand=True)
     async def _birthday(self, ctx: commands.Context, *args):
@@ -25,15 +25,13 @@ class Birthday(commands.Cog):
 
         if cmd == "add":
           if len(args) != 3:
-            await ctx.send("Invalid number of arguments specified for 'add'. For more information, please specify 'Venti-san! birthday ?'")
+            await ctx.send("Invalid number of arguments specified for 'add'. For more information, please specify 'Venti-san! birthday help'")
           else:
             await self._add_bd(ctx, args[1], args[2])
         elif cmd == "list":
           await self._get_bds(ctx)
         elif cmd == "help":
           await self._help(ctx)
-        elif cmd == "list":
-          await self._get_bds(ctx)
         else:
           await ctx.send("Invalid command '{c}' specified".format(c=cmd))    
     
@@ -47,33 +45,40 @@ class Birthday(commands.Cog):
         try:
 
           # Birthdays must be in the format:
-          # MM-DD-YYYY or MM/DD/YY
+          # MM-DD-YYYY or MM/DD/YYYY
           year = int(birthday.split(delim)[2])
           month = int(birthday.split(delim)[0])
           day = int(birthday.split(delim)[1])
 
-          bdate = datetime.datetime(year, month, day)
+          bdate = datetime.datetime(year, month, day).date()
           cb = None
 
           async for mem in ctx.guild.fetch_members(limit= None):
             uname = str(mem).split("#")[0]
             uid = str(mem).split("#")[1]
+            did = mem.id
 
-            if celebrant in uname:
+            if (celebrant.split("#")[0] in uname and celebrant.split("#")[1] in uid) or str(did) in celebrant:
               cb = mem
+
+              # If an entry for the birthday celebrant already exists, then we skip
+              if not self.firebase_db.add_bd(cb, birthday):
+                await ctx.send("An entry for {}'s birthday already exists".format(celebrant))
+                return
               break
 
-          self.firebase_db.push(
-              {
-                "celebrant": str(cb),
-                "birthday": birthday
-              }
-          )
-          await ctx.send("Birthday has been added for <@{}> ... {}".format(cb.id, bdate))
-        except Exception as e:
-          print(e)
+          if not cb:
+            await ctx.send("There are no individuals in this server with the username '{}'. Did you make sure to specify the celebrant in the appropriate format? (e.g., Username#9999)'".format(celebrant))
+          else:
+            await ctx.send("Birthday has been added for {} ... {}".format(celebrant, bdate))
+        except Exception:
+          await ctx.send("Something went wrong with trying to parse your entry. Did you make sure to stick to the appropriate format? (See below)")
+          await ctx.send("""```Venti-san! birthday add [date; format --> MM-DD-YYYY or MM/DD/YYYY] [celebrant; format --> DiscordUsername#1234] ```""")
       else:
-        pass
+        msg_1 = "Invalid arguments. Usage:"
+        msg_2 = """```Venti-san! birthday add [date; format --> MM-DD-YYYY or MM/DD/YYYY] [celebrant; format --> DiscordUsername#1234] ```"""
+        await ctx.send(msg_1)
+        await ctx.send(msg_2)
 
     async def _get_bd(self, ctx: commands.Context, celebrant):
       pass
@@ -83,8 +88,8 @@ class Birthday(commands.Cog):
                                color=discord.Color.blurple()))
         birthdays = ""
 
-        for key, value in (self.firebase_db.get()).items():
-            birthdays += "{} ... {} \n".format(value["celebrant"], value["birthday"])
+        for key, value in self.firebase_db.list_birthdays():
+            birthdays += "{} ... {} \n".format(value["celebrant_name"], value["birthday"])
 
         embed.add_field(name="Celebrant ... Birthday", value=birthdays)
         await ctx.send(embed=embed)

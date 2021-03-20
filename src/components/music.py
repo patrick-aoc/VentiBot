@@ -1,6 +1,7 @@
 import math
 import os
 import discord
+import time
 
 from discord.ext import commands
 from src.songs.YTDL import YTDLSource, YTDLError
@@ -226,7 +227,8 @@ class Music(commands.Cog):
             await ctx.invoke(self._join)
 
         async with ctx.typing():
-            # We are parsing a Spotify-related link
+
+            # We are parsing a Spotify link
             if ("open.spotify.com" in search):
                 song_info = ""
 
@@ -234,24 +236,21 @@ class Music(commands.Cog):
                     entries = await self.spotify.get_playlist_songs(search)
                     await ctx.send('Hai hai! :blush: Time to queue up some songs...')
                     count = 0
-                    first_song = None
 
                     for entry in entries:
                       try:
+                        time.sleep(5)
                         source = await YTDLSource.create_source(ctx, "%s %s" % (entry["name"], entry["artist"]), loop=self.bot.loop)
                         
-                        if not first_song:
-                          first_song = source
-
                         song = Song(source)
                         await ctx.voice_state.songs.put(song)
-                      except Exception:
+                      except Exception as e:
                           await ctx.send("Couldn't queue up %s" % (entry['name']))
+                          await ctx.send("Reason: {}".format(e))
                           continue
                       count += 1
 
                     await ctx.send('Queued up {} songs!'.format(count))
-                    await ctx.send('Aaaand now I should be playing {} !'.format(str(first_song)))
                 else:
                   song_info = await self.spotify.get_song_info(search)
                   source = await YTDLSource.create_source(ctx, "%s %s" % (song_info["name"], song_info["artist"]), loop=self.bot.loop)
@@ -260,7 +259,7 @@ class Music(commands.Cog):
                   await ctx.voice_state.songs.put(song)
                   await ctx.send('Hai hai! :blush: I shall play {} !'.format(str(source)))
 
-            # We are parsing YouTube playlists
+            # We are parsing a YouTube link
             else:
                 try:
                     if ("playlist" in search):
@@ -269,24 +268,21 @@ class Music(commands.Cog):
                       entries = await YTDLSource.get_playlist_entries(ctx, search, loop=self.bot.loop)
                       await ctx.send('Hai hai! :blush: Time to queue up some songs...')
                       count = 0
-                      first_song = None
 
                       for entry in entries:
                         try:
+                          time.sleep(5)
                           source = await YTDLSource.create_source(ctx, entry["id"], loop=self.bot.loop, using_id=True)
                         
-                          if not first_song:
-                            first_song = source
-
                           song = Song(source)
                           await ctx.voice_state.songs.put(song)
-                        except Exception:
+                        except Exception as e:
                             await ctx.send("Couldn't queue up %s" % (entry['title']))
+                            await ctx.seed("Reason: {}".format(e))
                             continue
                         count += 1
 
                       await ctx.send('Queued up {} songs!'.format(count))
-                      await ctx.send('Aaaand now I should be playing {} !'.format(str(first_song)))
                     else:
                       source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
                       song = Song(source)

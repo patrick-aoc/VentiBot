@@ -29,22 +29,24 @@ bot.add_cog(Birthday(bot, firebase_db))
 
 @bot.event
 async def on_ready():
+    print(date.today().isoweekday())
+    print(datetime.now().time())
     print('Logged in as:\n{0.user.name}\n{0.user.id}'.format(bot))
 
-@aiocron.crontab('* * * * *')
-async def test():
-  channel = bot.get_channel(int(os.getenv("DISCORD_BOT_TESTING")))
-  print(datetime.now().time())
+# @aiocron.crontab('* * * * *')
+# async def birthday():
+#   channel = bot.get_channel(int(os.getenv("DISCORD_BOT_TESTING")))
+#   print(datetime.now().time())
 
-@aiocron.crontab('0 1 * * 4,7')
+@aiocron.crontab('0 22 * * 3,6')
 async def crystal_chunks_and_parametric():
   channel = bot.get_channel(int(os.getenv("DISCORD_GACHA_GAMES")))
   ping = "<@&{}>".format(os.getenv("DISCORD_CRYSTAL_CHUNKS"))
-
-  if date.today().isoweekday() == 4:
+ 
+  if date.today().isoweekday() == 3:
     await channel.send(ping, file=discord.File('./src/res/cc_1.png'))
     await channel.send("<@&{}> Also, don't forget to use the parametric transformer for this week! uwu".format(os.getenv("DISCORD_GENSHIN_COOP")))
-  elif date.today().isoweekday() == 7:
+  elif date.today().isoweekday() == 6:
     await channel.send(ping, file=discord.File('./src/res/cc_2.png'))
 
 bot.run(os.getenv("TOKEN"))

@@ -17,5 +17,30 @@ class FirebaseDB():
 
         self.fdb = db
     
-    def get_bday_ref(self):
+    def add_bd(self, celebrant, birthday):
+      exists = False
+      added = False
+
+      for key, value in self.list_birthdays():
+        cb_id = value["celebrant_id"]
+
+        if cb_id == str(celebrant.id):
+          exists = True
+          break
+
+      if not exists:
+        self._get_bday_ref().push(
+          {
+            "celebrant_id": str(celebrant.id),
+            "celebrant_name": str(celebrant).split("#")[0],
+            "birthday": birthday
+          }
+        )
+        added = True
+      return added
+
+    def list_birthdays(self):
+       return (self._get_bday_ref().get()).items() if self._get_bday_ref().get() else dict()
+
+    def _get_bday_ref(self):
       return self.fdb.reference("/Birthdays")
