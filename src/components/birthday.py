@@ -57,21 +57,31 @@ class Birthday(commands.Cog):
             uname = str(mem).split("#")[0]
             uid = str(mem).split("#")[1]
             did = mem.id
-
+            
             if (celebrant.split("#")[0] in uname and celebrant.split("#")[1] in uid) or str(did) in celebrant:
-              cb = mem
+              author_id = str(ctx.message.author.id)
 
-              # If an entry for the birthday celebrant already exists, then we skip
-              if not self.firebase_db.add_bd(cb, birthday):
-                await ctx.send("An entry for {}'s birthday already exists".format(celebrant))
+              # TODO --> extend it to allow people with a specific role to add birthdays
+              if str(os.getenv("DISCORD_MY_ID")) == author_id or did == author_id:
+                cb = mem  
+
+                # If an entry for the birthday celebrant already exists, then we skip
+                if not self.firebase_db.add_bd(cb, birthday):
+                  await ctx.send("An entry for {}'s birthday already exists".format(celebrant))
+                  return
+
+                                
+                break
+              else:
+                await ctx.send("You are only allowed to add your own birthday!")
                 return
-              break
 
           if not cb:
             await ctx.send("There are no individuals in this server with the username '{}'. Did you make sure to specify the celebrant in the appropriate format? (e.g., Username#9999)'".format(celebrant))
           else:
             await ctx.send("Birthday has been added for {} ... {}".format(celebrant, bdate))
-        except Exception:
+        except Exception as e:
+          print(e)
           await ctx.send("Something went wrong with trying to parse your entry. Did you make sure to stick to the appropriate format? (See below)")
           await ctx.send("""```Venti-san! birthday add [date; format --> MM-DD-YYYY or MM/DD/YYYY] [celebrant; format --> DiscordUsername#1234] ```""")
       else:
