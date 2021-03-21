@@ -24,71 +24,116 @@ class Birthday(commands.Cog):
         cmd = args[0]
 
         if cmd == "add":
-          if len(args) != 3:
+          if len(args) < 2 or len(args) > 3:
             await ctx.send("Invalid number of arguments specified for 'add'. For more information, please specify 'Venti-san! birthday help'")
           else:
-            await self._add_bd(ctx, args[1], args[2])
+            if len(args) == 3:
+              await self._add_bd(ctx, args[1], args[2])
+            else:
+              await self._add_bd(ctx, args[1])
+
+        elif cmd == "remove":
+          if len(args) > 2:
+            await ctx.send("Invalid number of arguments specified for 'remove'. For more information, please specify 'Venti-san! birthday help'")
+          else:
+            if len(args) == 2:
+              await self._remove_bd(ctx, args[1])
+            else:
+              await self._remove_bd(ctx)
+
         elif cmd == "list":
           await self._get_bds(ctx)
         elif cmd == "help":
           await self._help(ctx)
+
         else:
           await ctx.send("Invalid command '{c}' specified".format(c=cmd))    
     
     async def _help(self, ctx: commands.Context):
         await ctx.send("Not yet implemented")
 
-    async def _add_bd(self, ctx: commands.Context, birthday, celebrant):
+    async def _add_bd(self, ctx: commands.Context, birthday, celebrant = None):
       if "/" in birthday or "-" in birthday:
         delim = "/" if "/" in birthday else "-"
 
         try:
-
+          
           # Birthdays must be in the format:
-          # MM-DD-YYYY or MM/DD/YYYY
-          year = int(birthday.split(delim)[2])
+          # MM-DD or MM/DD
           month = int(birthday.split(delim)[0])
-          day = int(birthday.split(delim)[1])
+          dte = int(birthday.split(delim)[1])
 
-          bdate = datetime.datetime(year, month, day).date()
+          if not self._is_valid_date(month, dte):
+            raise Exception
+
+          bdate = "{}/{}".format(month, dte)
           cb = None
 
-          async for mem in ctx.guild.fetch_members(limit= None):
-            uname = str(mem).split("#")[0]
-            uid = str(mem).split("#")[1]
-            did = mem.id
-            
-            if (celebrant.split("#")[0] in uname and celebrant.split("#")[1] in uid) or str(did) in celebrant:
-              author_id = str(ctx.message.author.id)
+          if celebrant:
+            async for mem in ctx.guild.fetch_members(limit= None):
+              uname = str(mem).split("#")[0]
+              uid = str(mem).split("#")[1]
+              did = str(mem.id)
 
-              # TODO --> extend it to allow people with a specific role to add birthdays
-              if str(os.getenv("DISCORD_MY_ID")) == author_id or did == author_id:
-                cb = mem  
+              if (celebrant.split("#")[0] in uname and celebrant.split("#")[1] in uid) or str(did) in str(celebrant):
+                author_id = str(ctx.message.author.id)
 
-                # If an entry for the birthday celebrant already exists, then we skip
-                if not self.firebase_db.add_bd(cb, birthday):
-                  await ctx.send("An entry for {}'s birthday already exists".format(celebrant))
+                # TODO --> extend it to allow people with a specific role to add birthdays
+                if str(os.getenv("DISCORD_MY_ID")) == author_id or did == author_id:
+                  cb = mem 
+                  break
+                else:
+                  await ctx.send("You are only allowed to add your own birthday!")
                   return
-
-                                
-                break
-              else:
-                await ctx.send("You are only allowed to add your own birthday!")
-                return
+          else:
+            cb = await ctx.guild.fetch_member(ctx.message.author.id)
 
           if not cb:
             await ctx.send("There are no individuals in this server with the username '{}'. Did you make sure to specify the celebrant in the appropriate format? (e.g., Username#9999)'".format(celebrant))
           else:
-            await ctx.send("Birthday has been added for {} ... {}".format(celebrant, bdate))
+
+            # If an entry for the birthday celebrant already exists, then we skip
+            if not self.firebase_db.add_bd(cb, bdate):
+              await ctx.send("An entry for {}'s birthday already exists".format(cb))
+              return   
+            await ctx.send("Birthday has been added for {} ... {} ({} {})".format(cb, bdate, self._get_month(month), dte))
+        except KeyError:
+          await ctx.send("Invalid birthday month was specified")
         except Exception as e:
           print(e)
           await ctx.send("Something went wrong with trying to parse your entry. Did you make sure to stick to the appropriate format? (See below)")
-          await ctx.send("""```Venti-san! birthday add [date; format --> MM-DD-YYYY or MM/DD/YYYY] [celebrant; format --> DiscordUsername#1234] ```""")
+          await ctx.send("""```Venti-san! birthday add [date; format --> MM-DD or MM/DD] [celebrant; format --> DiscordUsername#1234] ```""")
       else:
         msg_1 = "Invalid arguments. Usage:"
-        msg_2 = """```Venti-san! birthday add [date; format --> MM-DD-YYYY or MM/DD/YYYY] [celebrant; format --> DiscordUsername#1234] ```"""
+        msg_2 = """```Venti-san! birthday add [date; format --> MM-DD or MM/DD] [celebrant; format --> DiscordUsername#1234] ```"""
         await ctx.send(msg_1)
         await ctx.send(msg_2)
+
+    async def _remove_bd(self, ctx: commands.Context, celebrant = None):
+      cb = None
+
+      if celebrant:
+        async for mem in ctx.guild.fetch_members(limit= None):
+          uname = str(mem).split("#")[0]
+          uid = str(mem).split("#")[1]
+          did = str(mem.id)
+
+          if (celebrant.split("#")[0] in uname and celebrant.split("#")[1] in uid) or str(did) in str(celebrant):
+            author_id = str(ctx.message.author.id)
+            
+            if str(os.getenv("DISCORD_MY_ID")) == author_id or did == author_id:
+              cb = mem
+              break
+            else:
+              await ctx.send("You are only allowed to remove your own birthday!")
+              return
+      else:
+        cb = await ctx.guild.fetch_member(ctx.message.author.id)
+      
+      if not self.firebase_db.remove_bd(cb):
+        await ctx.send("Failed to remove the celebrant's birthday. Either they no longer exist in the list or something went wrong with the Firebase database.")
+      else:
+        await ctx.send("Birthday has been removed for {}".format(cb))
 
     async def _get_bd(self, ctx: commands.Context, celebrant):
       pass
@@ -97,11 +142,48 @@ class Birthday(commands.Cog):
         embed = (discord.Embed(title='Birthdays',
                                color=discord.Color.blurple()))
         birthdays = ""
-
         for key, value in self.firebase_db.list_birthdays():
             birthdays += "{} ... {} \n".format(value["celebrant_name"], value["birthday"])
 
-        embed.add_field(name="Celebrant ... Birthday", value=birthdays)
-        await ctx.send(embed=embed)
+        if birthdays == "":
+          await ctx.send("There are no birthdays recorded in the database")
+        else:
+          embed.add_field(name="Celebrant ... Birthday", value=birthdays)
+          await ctx.send(embed=embed)
+
+    def _is_valid_date(self, month, dte):
+      is_valid = True
+      
+      try:
+        m = self._get_month(month)
+
+        if month % 2 == 0:
+          if m == "February":
+            is_valid = dte >= 1 and dte <= 29
+          else:
+            is_valid = dte >= 1 and dte <= 30
+        else:
+          is_valid = dte >= 1 and dte <= 31
+
+      except KeyError:
+        is_valid = False
+      return is_valid
+
+    def _get_month(self, num):
+      months = {
+          1: "January",
+          2: "February",
+          3: "March",
+          4: "April",
+          5: "May",
+          6: "June",
+          7: "July",
+          8: "August",
+          9: "September",
+          10: "October",
+          11: "November",
+          12: "December"
+      }
+      return months[num]
     
       
