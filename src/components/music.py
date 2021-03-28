@@ -8,6 +8,8 @@ from src.songs.YTDL import YTDLSource, YTDLError
 from src.songs.Songs import Song
 from src.songs.Spotify import SpotifyTool
 from src.components.voice import VoiceState, VoiceError
+from src.res.help_res import music_help
+
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -137,23 +139,8 @@ class Music(commands.Cog):
         if not ctx.voice_state.is_playing:
             return await ctx.send('Not playing any music right now, Traveler-dono...')
 
-        # voter = ctx.message.author
-        # if voter == ctx.voice_state.current.requester:
         await ctx.message.add_reaction('⏭')
         ctx.voice_state.skip()
-
-        # elif voter.id not in ctx.voice_state.skip_votes:
-        #     ctx.voice_state.skip_votes.add(voter.id)
-        #     total_votes = len(ctx.voice_state.skip_votes)
-
-        #     if total_votes >= 3:
-        #         await ctx.message.add_reaction('⏭')
-        #         ctx.voice_state.skip()
-        #     else:
-        #         await ctx.send('Skip vote added, currently at **{}/3**'.format(total_votes))
-
-        # else:
-        #     await ctx.send('You have already voted to skip this song.')
 
     @commands.command(name='queue')
     async def _queue(self, ctx: commands.Context, *, page: int = 1):
@@ -292,6 +279,12 @@ class Music(commands.Cog):
 
                 except Exception as e:
                     await ctx.send('Gomenasai, Traveler-dono! Something happened :cry: ... {}'.format(str(e)))  
+
+    @commands.command(name="help")
+    async def _help(self, ctx: commands.Context):
+      user = await ctx.guild.fetch_member(ctx.message.author.id)
+      await user.send(music_help)
+      await ctx.send("Please check your DMs for reference to my comamands")
 
     @_join.before_invoke
     @_play.before_invoke

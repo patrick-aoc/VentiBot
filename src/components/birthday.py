@@ -31,7 +31,6 @@ class Birthday(commands.Cog):
               await self._add_bd(ctx, args[1], args[2])
             else:
               await self._add_bd(ctx, args[1])
-
         elif cmd == "remove":
           if len(args) > 2:
             await ctx.send("Invalid number of arguments specified for 'remove'. For more information, please specify 'Venti-san! birthday help'")
@@ -40,7 +39,6 @@ class Birthday(commands.Cog):
               await self._remove_bd(ctx, args[1])
             else:
               await self._remove_bd(ctx)
-
         elif cmd == "list":
           await self._get_bds(ctx)
         elif cmd == "help":
@@ -139,16 +137,16 @@ class Birthday(commands.Cog):
       pass
 
     async def _get_bds(self, ctx: commands.Context):
-        embed = (discord.Embed(title='Birthdays',
-                               color=discord.Color.blurple()))
+        embed = discord.Embed(title='Birthdays', color=discord.Color.blurple())
         birthdays = ""
         for key, value in self.firebase_db.list_birthdays():
-            birthdays += "{} ... {} \n".format(value["celebrant_name"], value["birthday"])
+          bd = value["birthday"]
+          birthdays += "{} .......... {} ({}) \n".format(value["celebrant_name"], bd, self._get_month(int(bd.split("/")[0])) + " " + bd.split("/")[1])
 
         if birthdays == "":
           await ctx.send("There are no birthdays recorded in the database")
         else:
-          embed.add_field(name="Celebrant ... Birthday", value=birthdays)
+          embed.add_field(name="Celebrant .......... Birthday", value=birthdays)
           await ctx.send(embed=embed)
 
     def _is_valid_date(self, month, dte):
