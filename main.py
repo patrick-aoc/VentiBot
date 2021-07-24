@@ -7,10 +7,12 @@ import youtube_dl
 
 from discord.ext import commands
 from src.components.music import Music
-from src.components.etc.firebase_db import FirebaseDB
+from src.components.etc.birthday_db import FirebaseBirthdayDB
+from src.components.etc.stocks_db import FirebaseStocksDB
 from src.components.birthday import Birthday
 from src.components.degen import Degen
 from src.utils.keep_alive import keep_alive
+from src.components.stocks import Stocks
 
 # Silence useless bug reports messages
 youtube_dl.utils.bug_reports_message = lambda: ''
@@ -19,13 +21,15 @@ intents = discord.Intents.default()
 intents.members = True
 
 keep_alive()
-bot = commands.Bot(command_prefix=['Venti-san! ', '++', 'Venti!'], description='Kaze da!', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=['++', '++ ', 'Venti!'], description='Kaze da!', intents=intents, help_command=None)
 
-firebase_db = FirebaseDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_URL"))
+birthday_db = FirebaseBirthdayDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_URL"))
+stocks_db = FirebaseStocksDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_URL"))
 
 bot.add_cog(Music(bot))
 bot.add_cog(Degen(bot))
-bot.add_cog(Birthday(bot, firebase_db))
+bot.add_cog(Birthday(bot, birthday_db))
+bot.add_cog(Stocks(bot, stocks_db))
 
 @bot.event
 async def on_ready():
@@ -45,7 +49,7 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_message_edit(message_before, message_after):
-  if "https" not in message_before.content:
+  if "http" not in message_before.content:
     chn = bot.get_channel(int(os.getenv("DISCORD_MSG_LOG")))
     embed = discord.Embed(title='EDITED MESSAGE', color=discord.Color.orange())
     embed.set_author(name=str(message_before.author))
@@ -59,7 +63,6 @@ async def birthday():
   cd = datetime.today().strftime('%m/%d').split("/")
   month = int(cd[0])
   day = int(cd[1])
-  #channel = bot.get_channel(int(os.getenv("DISCORD_BOT_TESTING")))
   channel = bot.get_channel(int(os.getenv("DISCORD_GENERAL")))
 
   for key, value in firebase_db.list_birthdays():

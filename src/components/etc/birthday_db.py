@@ -5,7 +5,7 @@ from firebase_admin import firestore
 
 import os
 
-class FirebaseDB():
+class FirebaseBirthdayDB():
 
     def __init__(self, project_id, firebase_url):
       # Use the application default credentials
@@ -65,3 +65,6 @@ class FirebaseDB():
 
     def _get_bday_ref(self):
       return self.fdb.reference("/Birthdays")
+    # =============================
+
+    
