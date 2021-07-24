@@ -23,30 +23,64 @@ class FirebaseStocksDB():
       self.symbol_list = self._get_symbols()
     
     def bto(self, stock, price):
-      exists = False
       added = False
 
-      # for key, value in self.list_stocks():
-      #   sid = value["stock_id"]
-
-      #   if sid == stock.upper():
-      #     exists = True
-      #     break
-
-      if not exists:
+      try:
         fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-        self._get_stocks_ref().push(
-            {
-              "stock_id": stock.upper(),
-              "price": price,
-              "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-              "type": "BTO",
-            }
-          )
+        self._get_stock_ref(stock.upper()).push(
+              {
+                "stock_id": stock.upper(),
+                "price": price,
+                "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                "type": "BTO",
+              }
+        )
         added = True
+      except:
+        pass
+      return added
 
+    def stc(self, stock, price):
+      added = False
+      entries = self.list_entries(stock.upper())
+
+      if len(entries) != 0:
+        last_entry = list(entries)[-1][1]
+        
+        if last_entry["type"] != "STC":
+          try:
+            fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+            self._get_stock_ref(stock.upper()).push(
+                  {
+                    "stock_id": stock.upper(),
+                    "price": price,
+                    "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                    "type": "STC",
+                  }
+            )
+            added = True
+          except:
+            pass
       return added
     
+    def avg(self, stock):
+      entries = self.list_entries(stock.upper())
+      sum = 0
+      count = 0
+
+      if len(entries) != 0:
+        for i in reversed(entries):
+          entry = i[1]
+          if entry["type"] == "BTO":
+            sum += float(entry["price"])
+            count += 1
+            continue
+          else:
+            break
+      
+      return (sum / count, count)
+
+
     def remove_bd(self, celebrant):
       exists = False
       removed = True
@@ -73,9 +107,15 @@ class FirebaseStocksDB():
 
     def list_stocks(self):
       return (self._get_stocks_ref().get()).items() if self._get_stocks_ref().get() else dict()
+    
+    def list_entries(self, stock):
+      return (self._get_stock_ref(stock).get()).items() if self._get_stock_ref(stock).get() else dict()
 
     def _get_stocks_ref(self):
       return self.fdb.reference("/Stocks")
+
+    def _get_stock_ref(self, stock):
+      return self.fdb.reference("/Stocks/{}".format(stock))
 
     def _get_symbols(self):
       r_us = requests.get('https://finnhub.io/api/v1/stock/symbol?exchange=US&token={}'.format(os.getenv("FINNHUB_API"))).json()

@@ -37,8 +37,12 @@ class Stocks(commands.Cog):
             await ctx.send("Invalid number of arguments specified for 'STC'. For more information, please specify '++stocks help'")
           else:
             await self._stc(ctx, args[1], args[2])
-        elif cmd == "list":
-          await self._get_bds(ctx)
+        elif cmd.lower() == "avg":
+          if len(args) != 2:
+            await ctx.send("Invalid number of arguments specified for 'AVG'. For more information, please specify '++stocks help'")
+          else:
+            await self.avg(ctx, args[1])
+
         elif cmd == "help":
           await self._help(ctx)
 
@@ -50,51 +54,44 @@ class Stocks(commands.Cog):
 
     async def _bto(self, ctx: commands.Context, stock, price):
       # Perform a lookup for the stock. If it's valid, add it
-      # as an entry. O/w, reversed
+      # as an entry. O/w, reject
       if stock.upper() in self.firebase_db.get_symbols():
-        #try:
-        px = round(float(price), 2)
-        if px < 0:
-          await ctx.send("Price cannot be negative")
-        else:
-          
-          if self.firebase_db.bto(stock, price):
-            await ctx.send("Successfully registered the entry")
+        try:
+          px = round(float(price), 2)
+          if px < 0:
+            await ctx.send("Price cannot be negative")
           else:
-            await ctx.send("Failed to register the entry. It might b")
-        #except ValueError:
-          #await ctx.send("Invalid price specified")
+            if self.firebase_db.bto(stock, price):
+              await ctx.send("Successfully bought to open (BTO) on the stock {} at the price ${} CAD".format(stock, px))
+            else:
+              await ctx.send("Failed to register the entry.")
+        except ValueError:
+          await ctx.send("Invalid price specified")
       else:
         await ctx.send("The stock '{}' does not exist in the index of exchanges I have cached (US/SZ)".format(stock))    
 
-    async def _stc(self, ctx: commands.Context, celebrant = None):
-      cb = None
-
-      if celebrant:
-        async for mem in ctx.guild.fetch_members(limit= None):
-          uname = str(mem).split("#")[0]
-          uid = str(mem).split("#")[1]
-          did = str(mem.id)
-
-          if (celebrant.split("#")[0] in uname and celebrant.split("#")[1] in uid) or str(did) in str(celebrant):
-            author_id = str(ctx.message.author.id)
-            
-            if str(os.getenv("DISCORD_MY_ID")) == author_id or did == author_id:
-              cb = mem
-              break
+    async def _stc(self, ctx: commands.Context, stock, price):
+      if stock.upper() in self.firebase_db.get_symbols():
+        try:
+          px = round(float(price), 2)
+          if px < 0:
+            await ctx.send("Price cannot be negative")
+          else:
+            if self.firebase_db.stc(stock, price):
+              await ctx.send("Successfully sold to close (STC) on the stock {} at the price ${} CAD".format(stock, px))
             else:
-              await ctx.send("You are only allowed to remove your own birthday!")
-              return
+              await ctx.send("Failed to register the entry. Either you have never BTO'd on the stock or your last transaction with the stock was a STC.")
+        except ValueError:
+          await ctx.send("Invalid price specified")
       else:
-        cb = await ctx.guild.fetch_member(ctx.message.author.id)
-      
-      if not self.firebase_db.remove_bd(cb):
-        await ctx.send("Failed to remove the celebrant's birthday. Either they no longer exist in the list or something went wrong with the Firebase database.")
-      else:
-        await ctx.send("Birthday has been removed for {}".format(cb))
+        await ctx.send("The stock '{}' does not exist in the index of exchanges I have cached (US/SZ)".format(stock))  
 
-    async def _get_bd(self, ctx: commands.Context, celebrant):
-      pass
+    async def avg(self, ctx: commands.Context, stock):
+      if stock.upper() in self.firebase_db.get_symbols():
+        avg, count = self.firebase_db.avg(stock)
+        await ctx.send("The average for the stock {} is ${} CAD (based on {} entries)".format(stock.upper(), avg, count)) 
+      else:
+        await ctx.send("The stock '{}' does not exist in the index of exchanges I have cached (US/SZ)".format(stock))  
 
     async def _get_bds(self, ctx: commands.Context):
         embed = discord.Embed(title='Birthdays', color=discord.Color.blurple())
