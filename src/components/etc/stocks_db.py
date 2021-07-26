@@ -65,20 +65,20 @@ class FirebaseStocksDB():
     
     def avg(self, stock):
       entries = self.list_entries(stock.upper())
-      sum = 0
+      sm = 0
       count = 0
 
       if len(entries) != 0:
         for i in reversed(entries):
           entry = i[1]
           if entry["type"] == "BTO":
-            sum += float(entry["price"])
+            sm += float(entry["price"])
             count += 1
             continue
           else:
             break
       
-      return (sum / count, count)
+      return (sm / count, count) if count > 0 else (0, 0)
 
 
     def remove_bd(self, celebrant):

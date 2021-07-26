@@ -9,6 +9,9 @@ from firebase_admin import firestore
 
 import os
 
+from datetime import datetime
+from pytz import timezone
+
 
 class Stocks(commands.Cog):
 
@@ -41,8 +44,17 @@ class Stocks(commands.Cog):
           if len(args) != 2:
             await ctx.send("Invalid number of arguments specified for 'AVG'. For more information, please specify '++stocks help'")
           else:
-            await self.avg(ctx, args[1])
-
+            await self._avg(ctx, args[1])
+        elif cmd.lower() == "open":
+          if len(args) != 1:
+            await ctx.send("Invalid number of arguments specified for 'OPEN'. For more information, please specify '++stocks help'")
+          else:
+            await self._open(ctx)
+        elif cmd.lower() == "history":
+          if len(args) != 1:
+            await ctx.send("Invalid number of arguments specified for 'HISTORY'. For more information, please specify '++stocks help'")
+          else:
+            await self._history(ctx)
         elif cmd == "help":
           await self._help(ctx)
 
@@ -86,59 +98,76 @@ class Stocks(commands.Cog):
       else:
         await ctx.send("The stock '{}' does not exist in the index of exchanges I have cached (US/SZ)".format(stock))  
 
-    async def avg(self, ctx: commands.Context, stock):
+    async def _avg(self, ctx: commands.Context, stock):
       if stock.upper() in self.firebase_db.get_symbols():
         avg, count = self.firebase_db.avg(stock)
         await ctx.send("The average for the stock {} is ${} CAD (based on {} entries)".format(stock.upper(), avg, count)) 
       else:
         await ctx.send("The stock '{}' does not exist in the index of exchanges I have cached (US/SZ)".format(stock))  
 
-    async def _get_bds(self, ctx: commands.Context):
-        embed = discord.Embed(title='Birthdays', color=discord.Color.blurple())
-        birthdays = ""
-        for key, value in self.firebase_db.list_birthdays():
-          bd = value["birthday"]
-          birthdays += "{} .......... {} ({}) \n".format(value["celebrant_name"], bd, self._get_month(int(bd.split("/")[0])) + " " + bd.split("/")[1])
+    async def _open(self, ctx: commands.Context):
+      open_pos = ""
 
-        if birthdays == "":
-          await ctx.send("There are no birthdays recorded in the database")
-        else:
-          embed.add_field(name="Celebrant .......... Birthday", value=birthdays)
-          await ctx.send(embed=embed)
+      for key, value in self.firebase_db.list_stocks():
+        stock_entries = self.firebase_db.list_entries(key)
 
-    def _is_valid_date(self, month, dte):
-      is_valid = True
-      
-      try:
-        m = self._get_month(month)
+        if len(stock_entries) > 0:
+          for i in reversed(stock_entries):
+            entry = i[1]
 
-        if month % 2 == 0:
-          if m == "February":
-            is_valid = dte >= 1 and dte <= 29
-          else:
-            is_valid = dte >= 1 and dte <= 30
-        else:
-          is_valid = dte >= 1 and dte <= 31
+            if entry["type"] == "BTO":
+              avg, count = self.firebase_db.avg(key)
+              open_pos += "{} ..........  ${} CAD (over {} entries)\n".format(key, avg, count)
+            break
+  
+      if open_pos == "":
+        await ctx.send("You have not exited from any positions as of yet")  
+      else:
+        embed = discord.Embed(title="Jay's Plays", color=discord.Color.blurple())
+        embed.add_field(name="Open Positions", value=open_pos)
+        await ctx.send(embed=embed)
 
-      except KeyError:
-        is_valid = False
-      return is_valid
+    async def _history(self, ctx: commands.Context):
+      embed = discord.Embed(title="Jay's History", color=discord.Color.blurple())
 
-    def _get_month(self, num):
-      months = {
-          1: "January",
-          2: "February",
-          3: "March",
-          4: "April",
-          5: "May",
-          6: "June",
-          7: "July",
-          8: "August",
-          9: "September",
-          10: "October",
-          11: "November",
-          12: "December"
-      }
-      return months[num]
-    
-      
+      for key, value in self.firebase_db.list_stocks():
+        hist = ""
+        stock_entries = self.firebase_db.list_entries(key)
+
+        if len(stock_entries) > 0:
+          pairs = dict()
+          e = 1
+
+          # Go through all the entries. Only consider the entries
+          # if they've been closed and are also within the date range
+          for i in reversed(stock_entries):
+            entry = i[1]
+            
+            if entry["type"] == "STC":
+              fmt = '%Y-%m-%d'
+              cdt = datetime.strptime(datetime.now(timezone("US/Eastern")).strftime(fmt), fmt)
+              dt = datetime.strptime(entry["date"].split()[0], fmt)
+              
+              if (cdt - dt).days <= 30:
+                hist += "\n{} .......... ${} CAD .......... ".format(entry["date"].split()[0], entry["price"])
+                # pairs[e - 1] = {"date": entry["date"].split()[0], "entries": [], "closing_price": entry["price"]}
+                e += 1
+                continue
+            else:
+              if e == 1:
+                pass
+              else:
+                hist += "${} CAD; ".format(entry["price"])
+                # curr_entries = pairs[e - 1]["entries"]
+                # curr_entries.append(entry["price"])
+                # pairs[e - 1]["entries"] = curr_entries
+          
+          if e != 1:
+            embed.add_field(name="{} - (Closing Date, Closing Price, Entry Price(s))".format(key), value=hist, inline = False)
+            
+      await ctx.send(embed=embed)
+            
+
+        
+
+

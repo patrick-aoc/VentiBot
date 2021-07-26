@@ -65,7 +65,7 @@ async def birthday():
   day = int(cd[1])
   channel = bot.get_channel(int(os.getenv("DISCORD_GENERAL")))
 
-  for key, value in firebase_db.list_birthdays():
+  for key, value in birthday_db.list_birthdays():
     bd = value["birthday"].split("/")
     if month == int(bd[0]) and day == int(bd[1]):
       cb = value["celebrant_id"]
