@@ -20,48 +20,70 @@ class Stocks(commands.Cog):
         self.voice_states = {}
         self.firebase_db = firebase_db
 
-    @commands.command(name='stocks', invoke_without_subcommand=True)
-    async def _stocks(self, ctx: commands.Context, *args):
+
+    def _auth(self, msg_auth_id):
+      allowed = True
+      if str(os.getenv("DISCORD_MY_ID")) != msg_auth_id and str(os.getenv("DISCORD_JAY_ID")) != msg_auth_id:
+        allowed = False
+        
+      return allowed
+
+    @commands.command(name='BTO', invoke_without_subcommand=True)
+    async def bto(self, ctx: commands.Context, *args):
       author_id = str(ctx.message.author.id)
-      if str(os.getenv("DISCORD_MY_ID")) != author_id and str(os.getenv("DISCORD_JAY_ID")) != author_id:
+      if not self._auth(author_id):
         await ctx.send("You are not allowed to use the stocks feature")
         return
+      
+      if len(args) != 2:
+        await ctx.send("Invalid number of arguments specified for 'BTO'. For more information, please specify '++stocks help'")
+      else:
+        await self._bto(ctx, args[0], args[1])
 
-      if len(args) > 0:
-        cmd = args[0]
+    @commands.command(name='STC', invoke_without_subcommand=True)
+    async def stc(self, ctx: commands.Context, *args):
+      author_id = str(ctx.message.author.id)
+      if not self._auth(author_id):
+        await ctx.send("You are not allowed to use the stocks feature")
+        return
+      
+      if len(args) != 2:
+        await ctx.send("Invalid number of arguments specified for 'STC'. For more information, please specify '++stocks help'")
+      else:
+        await self._stc(ctx, args[0], args[1])
 
-        if cmd.lower() == "bto":
-          if len(args) != 3:
-            await ctx.send("Invalid number of arguments specified for 'BTO'. For more information, please specify '++stocks help'")
-          else:
-            await self._bto(ctx, args[1], args[2])
-        elif cmd.lower() == "stc":
-          if len(args) != 3:
-            await ctx.send("Invalid number of arguments specified for 'STC'. For more information, please specify '++stocks help'")
-          else:
-            await self._stc(ctx, args[1], args[2])
-        elif cmd.lower() == "avg":
-          if len(args) != 2:
-            await ctx.send("Invalid number of arguments specified for 'AVG'. For more information, please specify '++stocks help'")
-          else:
-            await self._avg(ctx, args[1])
-        elif cmd.lower() == "open":
-          if len(args) != 1:
-            await ctx.send("Invalid number of arguments specified for 'OPEN'. For more information, please specify '++stocks help'")
-          else:
-            await self._open(ctx)
-        elif cmd.lower() == "history":
-          if len(args) != 1:
-            await ctx.send("Invalid number of arguments specified for 'HISTORY'. For more information, please specify '++stocks help'")
-          else:
-            await self._history(ctx)
-        elif cmd == "help":
-          await self._help(ctx)
+    @commands.command(name='AVG', invoke_without_subcommand=True)
+    async def avg(self, ctx: commands.Context, *args):
+      author_id = str(ctx.message.author.id)
+      if not self._auth(author_id):
+        await ctx.send("You are not allowed to use the stocks feature")
+        return
+      
+      if len(args) != 1:
+        await ctx.send("Invalid number of arguments specified for 'AVG'. For more information, please specify '++stocks help'")
+      else:
+        await self._avg(ctx, args[0])
 
-        else:
-          await ctx.send("Invalid command '{c}' specified".format(c=cmd))    
+    @commands.command(name='OPEN', invoke_without_subcommand=True)
+    async def open(self, ctx: commands.Context, *args):
+      author_id = str(ctx.message.author.id)
+      if not self._auth(author_id):
+        await ctx.send("You are not allowed to use the stocks feature")
+        return
+      
+      await self._open(ctx)
     
-    async def _help(self, ctx: commands.Context):
+    @commands.command(name='HISTORY', invoke_without_subcommand=True)
+    async def history(self, ctx: commands.Context, *args):
+      author_id = str(ctx.message.author.id)
+      if not self._auth(author_id):
+        await ctx.send("You are not allowed to use the stocks feature")
+        return
+      
+      await self._history(ctx)
+
+    @commands.command(name='HELP', invoke_without_subcommand=True)
+    async def help(self, ctx: commands.Context):
         await ctx.send("Not yet implemented")
 
     async def _bto(self, ctx: commands.Context, stock, price):
@@ -121,7 +143,7 @@ class Stocks(commands.Cog):
             break
   
       if open_pos == "":
-        await ctx.send("You have not exited from any positions as of yet")  
+        await ctx.send("You currently have no open positions at this moment.")  
       else:
         embed = discord.Embed(title="Jay's Plays", color=discord.Color.blurple())
         embed.add_field(name="Open Positions", value=open_pos)
@@ -149,7 +171,7 @@ class Stocks(commands.Cog):
               dt = datetime.strptime(entry["date"].split()[0], fmt)
               
               if (cdt - dt).days <= 30:
-                hist += "\n{} .......... ${} CAD .......... ".format(entry["date"].split()[0], entry["price"])
+                hist += "\n\n{} .......... ${} CAD .......... ".format(entry["date"].split()[0], entry["price"])
                 # pairs[e - 1] = {"date": entry["date"].split()[0], "entries": [], "closing_price": entry["price"]}
                 e += 1
                 continue
@@ -164,6 +186,7 @@ class Stocks(commands.Cog):
           
           if e != 1:
             embed.add_field(name="{} - (Closing Date, Closing Price, Entry Price(s))".format(key), value=hist, inline = False)
+            embed.add_field(name='\u200b', value='\u200b')
             
       await ctx.send(embed=embed)
             

@@ -72,15 +72,15 @@ async def birthday():
       await channel.send("It's <@{}>'s birthday today! Happy birthday desu nyah~ uwu :birthday: :confetti_ball:".format(cb))
       await channel.send(file=discord.File('./src/res/bd.jpg'))
 
-@aiocron.crontab('0 22 * * 3,6')
+@aiocron.crontab('0 22 * * sun')
 async def crystal_chunks_and_parametric():
   channel = bot.get_channel(int(os.getenv("DISCORD_GACHA_GAMES")))
   ping = "<@&{}>".format(os.getenv("DISCORD_CRYSTAL_CHUNKS"))
  
-  if date.today().isoweekday() == 3:
-    await channel.send(ping, file=discord.File('./src/res/cc_1.png'))
-    await channel.send("<@&{}> Also, don't forget to use the parametric transformer for this week! uwu".format(os.getenv("DISCORD_GENSHIN_COOP")))
-  elif date.today().isoweekday() == 6:
-    await channel.send(ping, file=discord.File('./src/res/cc_2.png'))
+  # if date.today().isoweekday() == 3:
+  #   await channel.send(ping, file=discord.File('./src/res/cc_1.png'))
+  #   await channel.send("<@&{}> Also, don't forget to use the parametric transformer for this week! uwu".format(os.getenv("DISCORD_GENSHIN_COOP")))
+  # elif date.today().isoweekday() == 6:
+  await channel.send(ping, file=discord.File('./src/res/cc_2.png'))
 
 bot.run(os.getenv("TOKEN"))
