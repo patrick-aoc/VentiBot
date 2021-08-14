@@ -77,10 +77,7 @@ async def crystal_chunks_and_parametric():
   channel = bot.get_channel(int(os.getenv("DISCORD_GACHA_GAMES")))
   ping = "<@&{}>".format(os.getenv("DISCORD_CRYSTAL_CHUNKS"))
  
-  # if date.today().isoweekday() == 3:
-  #   await channel.send(ping, file=discord.File('./src/res/cc_1.png'))
-  #   await channel.send("<@&{}> Also, don't forget to use the parametric transformer for this week! uwu".format(os.getenv("DISCORD_GENSHIN_COOP")))
-  # elif date.today().isoweekday() == 6:
   await channel.send(ping, file=discord.File('./src/res/cc_2.png'))
+  await channel.send("<@&{}> Also, don't forget to use the parametric transformer for this week! uwu".format(os.getenv("DISCORD_GENSHIN_COOP")))
 
 bot.run(os.getenv("TOKEN"))

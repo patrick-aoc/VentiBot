@@ -22,12 +22,12 @@ class FirebaseStocksDB():
       self.fdb = db
       self.symbol_list = self._get_symbols()
     
-    def bto(self, stock, price):
+    def bto(self, stock, price, user_id):
       added = False
 
       try:
         fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-        self._get_stock_ref(stock.upper()).push(
+        self._get_stock_ref(stock.upper(), user_id).push(
               {
                 "stock_id": stock.upper(),
                 "price": price,
@@ -40,9 +40,9 @@ class FirebaseStocksDB():
         pass
       return added
 
-    def stc(self, stock, price):
+    def stc(self, stock, price, user_id):
       added = False
-      entries = self.list_entries(stock.upper())
+      entries = self.list_entries(stock.upper(), user_id)
 
       if len(entries) != 0:
         last_entry = list(entries)[-1][1]
@@ -50,7 +50,7 @@ class FirebaseStocksDB():
         if last_entry["type"] != "STC":
           try:
             fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-            self._get_stock_ref(stock.upper()).push(
+            self._get_stock_ref(stock.upper(), user_id).push(
                   {
                     "stock_id": stock.upper(),
                     "price": price,
@@ -63,8 +63,8 @@ class FirebaseStocksDB():
             pass
       return added
     
-    def avg(self, stock):
-      entries = self.list_entries(stock.upper())
+    def avg(self, stock, user_id):
+      entries = self.list_entries(stock.upper(), user_id)
       sm = 0
       count = 0
 
@@ -79,7 +79,6 @@ class FirebaseStocksDB():
             break
       
       return (sm / count, count) if count > 0 else (0, 0)
-
 
     def remove_bd(self, celebrant):
       exists = False
@@ -105,17 +104,17 @@ class FirebaseStocksDB():
     def get_symbols(self):
       return self.symbol_list
 
-    def list_stocks(self):
-      return (self._get_stocks_ref().get()).items() if self._get_stocks_ref().get() else dict()
+    def list_stocks(self, user_id):
+      return (self._get_stocks_ref(user_id).get()).items() if self._get_stocks_ref(user_id).get() else dict()
     
-    def list_entries(self, stock):
-      return (self._get_stock_ref(stock).get()).items() if self._get_stock_ref(stock).get() else dict()
+    def list_entries(self, stock, user_id):
+      return (self._get_stock_ref(stock, user_id).get()).items() if self._get_stock_ref(stock, user_id).get() else dict()
 
-    def _get_stocks_ref(self):
-      return self.fdb.reference("/Stocks")
+    def _get_stocks_ref(self, user_id):
+      return self.fdb.reference("/Stocks/{}".format(user_id))
 
-    def _get_stock_ref(self, stock):
-      return self.fdb.reference("/Stocks/{}".format(stock))
+    def _get_stock_ref(self, stock, user_id):
+      return self.fdb.reference("/Stocks/{}/{}".format(user_id, stock))
 
     def _get_symbols(self):
       r_us = requests.get('https://finnhub.io/api/v1/stock/symbol?exchange=US&token={}'.format(os.getenv("FINNHUB_API"))).json()
