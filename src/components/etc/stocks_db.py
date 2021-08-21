@@ -24,6 +24,13 @@ class FirebaseStocksDB():
     
     def bto(self, stock, price, user_id):
       added = False
+      entries = self.list_entries(stock.upper(), user_id)
+
+      if len(entries) != 0:
+        last_entry = list(entries)[-1][1]
+        
+        if last_entry["type"] == "PSTC":
+          return added
 
       try:
         fmt = '%Y-%m-%d %H:%M:%S %Z%z'
@@ -32,7 +39,7 @@ class FirebaseStocksDB():
                 "stock_id": stock.upper(),
                 "price": price,
                 "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                "type": "BTO",
+                "type": "BTO"
               }
         )
         added = True
@@ -55,7 +62,7 @@ class FirebaseStocksDB():
                     "stock_id": stock.upper(),
                     "price": price,
                     "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                    "type": "STC",
+                    "type": "STC"
                   }
             )
             added = True
@@ -76,30 +83,67 @@ class FirebaseStocksDB():
             count += 1
             continue
           else:
-            break
+
+            # Partial exits do not mean transactions
+            # have been fully closed
+            if entry["type"] == "PSTC":
+              continue
+            else:
+              break
       
       return (sm / count, count) if count > 0 else (0, 0)
 
-    def remove_bd(self, celebrant):
-      exists = False
-      removed = True
-      node = None
+    def count_partial(self, stock, user_id):
+      entries = self.list_entries(stock.upper(), user_id)
+      sm = []
+      if len(entries) != 0:
+        for i in reversed(entries):
+          entry = i[1]
+          if entry["type"] == "PSTC":
+            sm.append(float(entry["price"]))
+            continue
+          else:
+            break
 
-      for key, value in self.list_birthdays():
-        cb_id = value["celebrant_id"]
+      return sm
 
-        if cb_id == str(celebrant.id):
-          exists = True
-          node = key
-          break
-      
-      if exists and node:
-        try:
-          self._get_bday_ref().child(node).delete()
-        except Exception:
-          removed = False
+    def pstc(self, stock, user_id, price):
+      added = False
+      next_stc = False
+      ty = ""
+      entries = self.list_entries(stock.upper(), user_id)   
+      if len(entries) != 0:
+        last_entry = list(entries)[-1][1]
 
-      return removed
+        # One cannot PSTC if their prev. transaction was an STC
+        if last_entry["type"] != "STC":
+          second_last_entry = None
+
+          # If one's 2nd last entry was a PSTC, we need to make
+          # sure that the individual is aware that a 3rd attempt to
+          # PSTC will result in an STC
+          try:
+            second_last_entry = list(entries)[-2][1]
+          except:
+            pass
+
+          try:
+            fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+            t = "PSTC" if last_entry["type"] == "BTO" or second_last_entry["type"] != "PSTC" else "STC"
+            self._get_stock_ref(stock.upper(), user_id).push(
+                  {
+                    "stock_id": stock.upper(),
+                    "price": price,
+                    "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                    "type": t
+                  }
+            )
+            added = True
+            ty = t
+            next_stc = last_entry["type"] == "PSTC" and ty != "STC"
+          except:
+            pass
+      return (added, next_stc, ty)
 
     def get_symbols(self):
       return self.symbol_list
