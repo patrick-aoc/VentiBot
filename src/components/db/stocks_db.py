@@ -91,7 +91,7 @@ class FirebaseStocksDB():
             else:
               break
       
-      return (sm / count, count) if count > 0 else (0, 0)
+      return (sm / count, count) if count > 0 else (0.00, 0)
 
     def count_partial(self, stock, user_id):
       entries = self.list_entries(stock.upper(), user_id)
@@ -168,6 +168,3 @@ class FirebaseStocksDB():
       sz_symbols = [e["symbol"] for e in r_sz]
 
       return us_symbols + sz_symbols
-    # =============================
-
-    

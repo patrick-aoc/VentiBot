@@ -7,10 +7,9 @@ import youtube_dl
 
 from discord.ext import commands
 from src.components.music import Music
-from src.components.etc.birthday_db import FirebaseBirthdayDB
-from src.components.etc.stocks_db import FirebaseStocksDB
+from src.components.db.birthday_db import FirebaseBirthdayDB
+from src.components.db.stocks_db import FirebaseStocksDB
 from src.components.birthday import Birthday
-from src.components.degen import Degen
 from src.utils.keep_alive import keep_alive
 from src.components.stocks import Stocks
 
@@ -27,7 +26,6 @@ birthday_db = FirebaseBirthdayDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_UR
 stocks_db = FirebaseStocksDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_URL"))
 
 bot.add_cog(Music(bot))
-bot.add_cog(Degen(bot))
 bot.add_cog(Birthday(bot, birthday_db))
 bot.add_cog(Stocks(bot, stocks_db))
 
