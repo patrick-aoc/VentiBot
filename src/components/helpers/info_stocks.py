@@ -25,43 +25,43 @@ async def open(ctx: commands.Context, firebase_db):
 
           if pstring != "":
             open_pos += " .......... {}".format(pstring)
-          if len(open_pos) > 900:
+          if len(open_pos) > 500:
             pages.append(open_pos)
             open_pos = ""
         break
   
-  if len(pages) == 0:
+  if len(pages) == 0 and open_pos == "":
     await ctx.send("You currently have no open positions at this moment.")  
   
   else:
     au_name = ctx.guild.get_member(ctx.message.author.id).name
 
-    if len(pages) ==  1:
-      em = discord.Embed(title="{}'s Plays".format(au_name), color=discord.Color.blurple())
-      em.add_field(name="Open Positions - (Stock, Average, Partial Exit(s) (if any))", value=pages[0])
-      await ctx.send(embed=em)
+    if len(pages) == 0 and open_pos != "":
+      embed = create_embed("{}'s Plays".format(au_name), "Open Positions - (Stock, Average, Partial Exit(s) (if any))", open_pos)
+      await ctx.send(embed=embed)
     else:
-      paginator = DiscordUtils.Pagination.CustomEmbedPaginator(ctx)
       embeds = []
-      
       i = 1
-      for pg in pages:
-        em = discord.Embed(title="{}'s Plays".format(au_name), color=discord.Color.blurple())
-        em.add_field(name="Open Positions - (Stock, Average, Partial Exit(s) (if any))", value=pg)
-        em.set_footer(text="Page {} of {}".format(1, len(pages)))
-        embeds.append(em)
-        i += 1
+      pg_count = len(pages) + 1 if open_pos != "" else len(pages)
 
-      paginator.add_reaction('⏮️', "first")
-      paginator.add_reaction('⏪', "back")
-      paginator.add_reaction('⏩', "next")
-      paginator.add_reaction('⏭️', "last")
-      await paginator.run(embeds)
+      for pg in pages:
+        embed = create_embed("{}'s Plays".format(au_name), "Open Positions - (Stock, Average, Partial Exit(s) (if any))", pg, "Page {} of {}".format(i, pg_count))
+        embeds.append(embed)
+        i += 1
+      
+      if open_pos != "":
+        embed = create_embed("{}'s Plays".format(au_name), "Open Positions - (Stock, Average, Partial Exit(s) (if any))", open_pos, "Page {} of {}".format(pg_count, pg_count))
+        embeds.append(embed)
+
+      await create_pagination(ctx, embeds)
 
 async def history(ctx: commands.Context, firebase_db):
   au_name = ctx.guild.get_member(ctx.message.author.id).name
-  embed = discord.Embed(title="{}'s History (Past 30 Days)".format(au_name), color=discord.Color.blurple())
+  em_tit = "{}'s History (Past 30 Days)".format(au_name)
+  embeds = []
+  curr_embed = create_embed(em_tit)
   empty_history = True
+
 
   for key, value in firebase_db.list_stocks(ctx.message.author.id):
     hist = ""
@@ -112,9 +112,63 @@ async def history(ctx: commands.Context, firebase_db):
           
       if e != 1:
         empty_history = False
-        embed.add_field(name="{} - (Closing Date, Closing Price, Entry Price(s), Partial Exit(s) (if any))".format(key), value=hist, inline = False)
-        embed.add_field(name='\u200b', value='\u200b')
+        create_field(curr_embed, "{} - (Closing Date, Closing Price, Entry Price(s), Partial Exit(s) (if any))".format(key), hist)
+        if len(curr_embed.fields) == 8:
+          curr_embed.remove_field(7)
+          
+          embeds.append(curr_embed)
+          curr_embed = create_embed(em_tit)
         
+
   if not empty_history:
-    embed.remove_field(len(embed.fields) - 1)
-  await ctx.send(embed=embed)
+
+    if len(embeds) == 0 and len(curr_embed.fields) > 0:
+      curr_embed.remove_field(len(curr_embed.fields) - 1)
+      await ctx.send(embed=curr_embed)
+    else:
+      if len(embeds) == 1:
+        if len(curr_embed.fields) > 0:
+          curr_embed.remove_field(len(curr_embed.fields) - 1)
+          curr_embed.set_footer(text="Page 2 of 2")
+          embeds[0].set_footer(text="Page 1 of 2")
+          embeds.append(curr_embed)
+          await create_pagination(ctx, embeds)
+        else:
+          await ctx.send(embed=embeds[0])
+      else:
+        if len(curr_embed.fields) > 0:
+          curr_embed.remove_field(len(curr_embed.fields) - 1)
+          embeds.append(curr_embed)
+        
+        i = 1
+        for e in embeds:
+          e.set_footer(text="Page {} of {}".format(i, len(embeds)))
+          i += 1
+          
+        await create_pagination(ctx, embeds)
+
+  else:
+    await ctx.send("You have not closed on any transaction with any stock in the past 30 days")
+    
+
+def create_embed(title, name="", value="", footer_text=""):
+  em = discord.Embed(title=title, color=discord.Color.blurple())
+
+  if name != "" and value != "":
+    em.add_field(name=name, value=value)
+
+  if footer_text != "":
+    em.set_footer(text=footer_text)
+  return em
+
+def create_field(embed, name, value, inline=False):
+  embed.add_field(name=name, value=value, inline=inline)
+  embed.add_field(name='\u200b', value='\u200b')
+
+async def create_pagination(ctx: commands.Context, embeds):
+  paginator = DiscordUtils.Pagination.CustomEmbedPaginator(ctx)
+  paginator.add_reaction('⏮️', "first")
+  paginator.add_reaction('⏪', "back")
+  paginator.add_reaction('⏩', "next")
+  paginator.add_reaction('⏭️', "last")
+  await paginator.run(embeds)
