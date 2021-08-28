@@ -1,13 +1,15 @@
 import discord
 from discord.ext import commands
 
+import DiscordUtils
+
 from datetime import datetime
 from pytz import timezone
 
 
 async def open(ctx: commands.Context, firebase_db):
   open_pos = ""
-
+  pages = []
   for key, value in firebase_db.list_stocks(ctx.message.author.id):
     stock_entries = firebase_db.list_entries(key, ctx.message.author.id)
 
@@ -23,15 +25,38 @@ async def open(ctx: commands.Context, firebase_db):
 
           if pstring != "":
             open_pos += " .......... {}".format(pstring)
+          if len(open_pos) > 900:
+            pages.append(open_pos)
+            open_pos = ""
         break
   
-  if open_pos == "":
+  if len(pages) == 0:
     await ctx.send("You currently have no open positions at this moment.")  
+  
   else:
     au_name = ctx.guild.get_member(ctx.message.author.id).name
-    embed = discord.Embed(title="{}'s Plays".format(au_name), color=discord.Color.blurple())
-    embed.add_field(name="Open Positions - (Stock, Average, Partial Exit(s) (if any))", value=open_pos)
-    await ctx.send(embed=embed)
+
+    if len(pages) ==  1:
+      em = discord.Embed(title="{}'s Plays".format(au_name), color=discord.Color.blurple())
+      em.add_field(name="Open Positions - (Stock, Average, Partial Exit(s) (if any))", value=pages[0])
+      await ctx.send(embed=em)
+    else:
+      paginator = DiscordUtils.Pagination.CustomEmbedPaginator(ctx)
+      embeds = []
+      
+      i = 1
+      for pg in pages:
+        em = discord.Embed(title="{}'s Plays".format(au_name), color=discord.Color.blurple())
+        em.add_field(name="Open Positions - (Stock, Average, Partial Exit(s) (if any))", value=pg)
+        em.set_footer(text="Page {} of {}".format(1, len(pages)))
+        embeds.append(em)
+        i += 1
+
+      paginator.add_reaction('⏮️', "first")
+      paginator.add_reaction('⏪', "back")
+      paginator.add_reaction('⏩', "next")
+      paginator.add_reaction('⏭️', "last")
+      await paginator.run(embeds)
 
 async def history(ctx: commands.Context, firebase_db):
   au_name = ctx.guild.get_member(ctx.message.author.id).name

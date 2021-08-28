@@ -47,7 +47,7 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_message_edit(message_before, message_after):
-  if "http" not in message_before.content:
+  if "http" not in message_before.content and len(message_before.embeds) == 0:
     chn = bot.get_channel(int(os.getenv("DISCORD_MSG_LOG")))
     embed = discord.Embed(title='EDITED MESSAGE', color=discord.Color.orange())
     embed.set_author(name=str(message_before.author))

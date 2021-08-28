@@ -5,8 +5,8 @@ from datetime import datetime
 import os
 from pytz import timezone
 
-import src.components.helpers.h_stocks as HLP
-import src.components.helpers.hpag_stocks as HLPPag
+import src.components.helpers.trans_stocks as HLP
+import src.components.helpers.info_stocks as HLPPag
 from src.res.help_res import stocks_help
 
 class Stocks(commands.Cog):
@@ -74,7 +74,8 @@ class Stocks(commands.Cog):
       Returns all the open positions (that haven't been closed)
       for the user calling the command.
       """
-      await HLPPag.open(ctx, self.firebase_db)
+      async with ctx.typing():
+        await HLPPag.open(ctx, self.firebase_db)
   
     @commands.command(name='HISTORY', invoke_without_subcommand=True)
     @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
@@ -83,18 +84,14 @@ class Stocks(commands.Cog):
       Returns a history of every purchase that the user
       calling the command has closed.
       """
-      await HLPPag.history(ctx, self.firebase_db)
+      async with ctx.typing():
+        await HLPPag.history(ctx, self.firebase_db)
 
     @commands.command(name='HELP', invoke_without_subcommand=True)
     @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
     async def help(self, ctx: commands.Context):
-        user = await ctx.guild.fetch_member(ctx.message.author.id)
-        await user.send(stocks_help)
-        await ctx.send("Please check your DMs for reference to my comamands pertaining to Stocks")
+      user = await ctx.guild.fetch_member(ctx.message.author.id)
+      await user.send(stocks_help)
+      await ctx.send("Please check your DMs for reference to my comamands pertaining to Stocks")
 
-    # ===================== HELPERS ====================  
-    def _parse_price(self, price):
-      rx = price.split(".")
-      r = rx[1] if len(rx) == 2 else "{}.00".format(price)
-      return round(float(price), len(r)) if len(r) > 1 else round(float(price), 2)
     
