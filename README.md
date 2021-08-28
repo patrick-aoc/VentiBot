@@ -1,5 +1,5 @@
-# VentiBot (WIP)
+# Venti Bot
 
-Yet another Discord bot that plays music.
+A Discord Bot that functions as an audit log for stock trades.
 
-It will be doing more than just playing music...just you wait!
+You can track your trades, procure and examine key metrics/analytics of your transactions, and much more!

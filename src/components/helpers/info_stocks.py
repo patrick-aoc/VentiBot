@@ -62,7 +62,6 @@ async def history(ctx: commands.Context, firebase_db):
   curr_embed = create_embed(em_tit)
   empty_history = True
 
-
   for key, value in firebase_db.list_stocks(ctx.message.author.id):
     hist = ""
     stock_entries = firebase_db.list_entries(key, ctx.message.author.id)
@@ -115,22 +114,23 @@ async def history(ctx: commands.Context, firebase_db):
         create_field(curr_embed, "{} - (Closing Date, Closing Price, Entry Price(s), Partial Exit(s) (if any))".format(key), hist)
         if len(curr_embed.fields) == 8:
           curr_embed.remove_field(7)
-          
           embeds.append(curr_embed)
           curr_embed = create_embed(em_tit)
         
 
+  # Pagination at the footer is dealt with at the end since
+  # We don't exactly now how many entries we have as we're
+  # iterating through them all
   if not empty_history:
-
     if len(embeds) == 0 and len(curr_embed.fields) > 0:
       curr_embed.remove_field(len(curr_embed.fields) - 1)
       await ctx.send(embed=curr_embed)
     else:
       if len(embeds) == 1:
         if len(curr_embed.fields) > 0:
-          curr_embed.remove_field(len(curr_embed.fields) - 1)
-          curr_embed.set_footer(text="Page 2 of 2")
           embeds[0].set_footer(text="Page 1 of 2")
+          curr_embed.set_footer(text="Page 2 of 2")
+          curr_embed.remove_field(len(curr_embed.fields) - 1)
           embeds.append(curr_embed)
           await create_pagination(ctx, embeds)
         else:
@@ -144,9 +144,7 @@ async def history(ctx: commands.Context, firebase_db):
         for e in embeds:
           e.set_footer(text="Page {} of {}".format(i, len(embeds)))
           i += 1
-          
         await create_pagination(ctx, embeds)
-
   else:
     await ctx.send("You have not closed on any transaction with any stock in the past 30 days")
     
