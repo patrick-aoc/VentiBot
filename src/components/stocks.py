@@ -25,10 +25,17 @@ class Stocks(commands.Cog):
       Make an entry for a stock at a given price for the user that 
       called the command.
       """
-      if len(args) != 2:
-        await ctx.send("Invalid number of arguments specified for 'BTO'. For more information, please specify '++HELP'")
+      if "//" not in args:
+        if len(args) != 2:
+          await ctx.send("Invalid number of arguments specified for 'BTO'. For more information, please specify '++HELP'")
+        else:
+          await HLP.bto(ctx, self.firebase_db, args[0], args[1])  
       else:
-        await HLP.bto(ctx, self.firebase_db, args[0], args[1])
+        if args.index("//") == 2 and len(args) > 3:
+          notes = "".join("{} ".format(i) for i in args[3:])
+          await HLP.bto(ctx, self.firebase_db, args[0], args[1], notes)
+        else:
+          await ctx.send("Invalid usage of the command 'BTO'. For more information, please specify '++HELP'")
 
     @commands.command(name='STC', invoke_without_subcommand=True)
     @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
@@ -39,21 +46,49 @@ class Stocks(commands.Cog):
       Close the entries for a stock at a given price for the user
       that called the command.
       """
-      if len(args) != 2:
-        await ctx.send("Invalid number of arguments specified for 'STC'. For more information, please specify '++HELP'")
+      if "//" not in args:
+        if len(args) != 2:
+          await ctx.send("Invalid number of arguments specified for 'STC'. For more information, please specify '++HELP'")
+        else:
+          await HLP.stc(ctx, self.firebase_db, args[0], args[1])  
       else:
-        await HLP.stc(ctx, self.firebase_db, args[0], args[1])
+        if args.index("//") == 2 and len(args) > 3:
+          notes = "".join("{} ".format(i) for i in args[3:])
+          await HLP.stc(ctx, self.firebase_db, args[0], args[1], notes)
+        else:
+          await ctx.send("Invalid usage of the command 'STC'. For more information, please specify '++HELP'")
     
     @commands.command(name='PSTC', invoke_without_subcommand=True)
     @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
     async def pstc(self, ctx: commands.Context, *args):
       """
       PSTC - Partial Exit
+
+      Perform a partial exit for an open stock at a given price for
+      the user that called the command.
       """
-      if len(args) != 2:
-        await ctx.send("Invalid number of arguments specified for 'PSTC'. For more information, please specify '++HELP'")
+      if "//" not in args:
+        if len(args) != 2:
+          await ctx.send("Invalid number of arguments specified for 'PSTC'. For more information, please specify '++HELP'")
+        else:
+          await HLP.pstc(ctx, self.firebase_db, args[0], args[1])  
       else:
-        await HLP.pstc(ctx, self.firebase_db, args[0], args[1])
+        if args.index("//") == 2 and len(args) > 3:
+          notes = "".join("{} ".format(i) for i in args[3:])
+          await HLP.pstc(ctx, self.firebase_db, args[0], args[1], notes)
+        else:
+          await ctx.send("Invalid usage of the command 'PSTC'. For more information, please specify '++HELP'")
+
+    @commands.command(name='TRANS', invoke_without_subcommand=True)
+    @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
+    async def notes(self, ctx: commands.Context, *args):
+      """
+      NOTES
+      """
+      if len(args) != 1:
+        await ctx.send("Invalid number of arguments specified for 'NOTES'. For more information, please specify '++HELP'")
+      else:
+        await HLPPag.notes(ctx, self.firebase_db, args[0])
 
     @commands.command(name='AVG', invoke_without_subcommand=True)
     @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))

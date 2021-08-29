@@ -5,6 +5,7 @@ from firebase_admin import firestore
 import requests
 
 from datetime import datetime
+import json
 from pytz import timezone
 import os
 
@@ -14,7 +15,7 @@ class FirebaseStocksDB():
 
     def __init__(self, project_id, firebase_url):
       # Use the application default credentials
-      cred_obj = firebase_admin.credentials.Certificate(os.getenv("FIREBASE_CRED"))
+      cred_obj = firebase_admin.credentials.Certificate("./m.json")
       firebase_admin.initialize_app(cred_obj, {
           'projectId': project_id,
           'databaseURL': firebase_url
@@ -22,7 +23,7 @@ class FirebaseStocksDB():
       self.fdb = db
       self.symbol_list = self._get_symbols()
     
-    def bto(self, stock, price, user_id):
+    def bto(self, stock, price, user_id, notes=""):
       added = False
       entries = self.list_entries(stock.upper(), user_id)
 
@@ -39,7 +40,8 @@ class FirebaseStocksDB():
                 "stock_id": stock.upper(),
                 "price": price,
                 "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                "type": "BTO"
+                "type": "BTO",
+                "notes": notes
               }
         )
         added = True
@@ -47,7 +49,7 @@ class FirebaseStocksDB():
         pass
       return added
 
-    def stc(self, stock, price, user_id):
+    def stc(self, stock, price, user_id, notes=""):
       added = False
       entries = self.list_entries(stock.upper(), user_id)
 
@@ -62,7 +64,8 @@ class FirebaseStocksDB():
                     "stock_id": stock.upper(),
                     "price": price,
                     "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                    "type": "STC"
+                    "type": "STC",
+                    "notes": notes
                   }
             )
             added = True
@@ -107,7 +110,7 @@ class FirebaseStocksDB():
 
       return sm
 
-    def pstc(self, stock, user_id, price):
+    def pstc(self, stock, user_id, price, notes=""):
       added = False
       next_stc = False
       ty = ""
@@ -135,7 +138,8 @@ class FirebaseStocksDB():
                     "stock_id": stock.upper(),
                     "price": price,
                     "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                    "type": t
+                    "type": t,
+                    "notes": notes
                   }
             )
             added = True

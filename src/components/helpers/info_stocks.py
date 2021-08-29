@@ -65,7 +65,6 @@ async def history(ctx: commands.Context, firebase_db):
   for key, value in firebase_db.list_stocks(ctx.message.author.id):
     hist = ""
     stock_entries = firebase_db.list_entries(key, ctx.message.author.id)
-
     if len(stock_entries) > 0:
 
       # e will help us in ensuring that we don't consider open 
@@ -78,12 +77,10 @@ async def history(ctx: commands.Context, firebase_db):
       # if they've been closed and are also within the date range
       for i in reversed(stock_entries):
         entry = i[1]
-            
         if entry["type"] == "STC":
           fmt = '%Y-%m-%d'
           cdt = datetime.strptime(datetime.now(timezone("US/Eastern")).strftime(fmt), fmt)
           dt = datetime.strptime(entry["date"].split()[0], fmt)
-              
           if (cdt - dt).days <= 30:
             hist += "\n\n{} .......... ${} USD .......... ".format(entry["date"].split()[0], format(float(entry["price"]), ".{}f".format(len(entry["price"].split(".")[1]))))
             e += 1
@@ -98,7 +95,6 @@ async def history(ctx: commands.Context, firebase_db):
             # but we don't want to concat the result with the
             # string just yet until we go through the entries first
             money = "${} USD; ".format(format(float(entry["price"]), ".{}f".format(len(entry["price"].split(".")[1]))))
-
             if entry["type"] == "PSTC":
               pstcs += money
             elif entry["type"] == "BTO":
@@ -117,7 +113,6 @@ async def history(ctx: commands.Context, firebase_db):
           embeds.append(curr_embed)
           curr_embed = create_embed(em_tit)
         
-
   # Pagination at the footer is dealt with at the end since
   # We don't exactly now how many entries we have as we're
   # iterating through them all
@@ -139,7 +134,6 @@ async def history(ctx: commands.Context, firebase_db):
         if len(curr_embed.fields) > 0:
           curr_embed.remove_field(len(curr_embed.fields) - 1)
           embeds.append(curr_embed)
-        
         i = 1
         for e in embeds:
           e.set_footer(text="Page {} of {}".format(i, len(embeds)))
@@ -147,7 +141,55 @@ async def history(ctx: commands.Context, firebase_db):
         await create_pagination(ctx, embeds)
   else:
     await ctx.send("You have not closed on any transaction with any stock in the past 30 days")
-    
+  
+async def notes(ctx: commands.Context, firebase_db, stock):
+  notes = ""
+  pages = []
+
+  for key, value in firebase_db.list_stocks(ctx.message.author.id):
+    if key == stock.upper():
+      stock_entries = firebase_db.list_entries(key, ctx.message.author.id)
+
+      if len(stock_entries) > 0:
+        for i in stock_entries:
+          entry = i[1]
+
+          try:
+            nts = "No notes available for this transaction " if entry["notes"] == "" else entry["notes"]
+          except KeyError:
+            nts = "No notes available for this transaction "
+
+          notes += "\n{} @ ${} USD - {}- {}".format(entry["type"], entry["price"], nts, entry["date"])
+
+          if len(notes) > 500:
+            pages.append(notes)
+            notes = ""
+
+  if len(pages) == 0 and notes == "":
+    await ctx.send("You have not made any transactions with this stock.")  
+  
+  else:
+    au_name = ctx.guild.get_member(ctx.message.author.id).name
+    em_tit = "{}'s Transactions for the stock {}".format(au_name, stock)
+
+    if len(pages) == 0 and notes != "":
+      embed = create_embed(em_tit, "Transaction - Notes - Date", notes)
+      await ctx.send(embed=embed)
+    else:
+      embeds = []
+      i = 1
+      pg_count = len(pages) + 1 if notes != "" else len(pages)
+
+      for pg in pages:
+        embed = create_embed(em_tit, "Transaction - Notes - Date", pg, "Page {} of {}".format(i, pg_count))
+        embeds.append(embed)
+        i += 1
+      
+      if notes != "":
+        embed = create_embed(em_tit, "Transaction - Notes - Date", notes, "Page {} of {}".format(pg_count, pg_count))
+        embeds.append(embed)
+
+      await create_pagination(ctx, embeds)
 
 def create_embed(title, name="", value="", footer_text=""):
   em = discord.Embed(title=title, color=discord.Color.blurple())

@@ -14,9 +14,10 @@ music_help = "**Music Commands** --> [Venti-san!, Venti!, ++] <command> \n \n" +
 "***loop*** - Loops the song that is currently playing. (Patrick still needs to work on allowing you to choose between looping a song and looping a queue of songs) \n \n"
 
 stocks_help = "**Stock Commands** --> ++<command> \n \n" + \
-"***BTO***  *stock_name* *entry_price* - BUY TO OPEN - Create an entry for the given stock <stock_name> at the price of <entry_price>.   \n \n" + \
-"***STC***  *stock_name* *closing_price* - SELL TO CLOSE - Close the most recent set of entries for a given stock <stock_name> at the price of <closing_price>. You cannot STC on a stock if you haven't bought it yet (either you have never bought to open on the stock OR your previous transaction on the stock was already an STC). \n \n" + \
+"***BTO***  *stock_name* *entry_price* // *notes* - BUY TO OPEN - Create an entry for the given stock <stock_name> at the price of <entry_price>. Optionally, you may leave notes by following up your entry with '... // <notes>'.   \n \n" + \
+"***STC***  *stock_name* *closing_price* // *notes* - SELL TO CLOSE - Close the most recent set of entries for a given stock <stock_name> at the price of <closing_price>. You cannot STC on a stock if you haven't bought it yet (either you have never bought to open on the stock OR your previous transaction on the stock was already an STC). Optionally, you may leave notes by following up your entry with '... // <notes>'.\n \n" + \
+"***PSTC***  *stock_name* *partial_exit_price* // *notes* - Make a partial exit on a stock at the price of <partial_exit_price>. NOTE - You can make 3 partial exits on an open entry where the 3rd exit will be noted as a STC. Optionally, you may leave notes by following up your entry with '... // <notes>'. \n \n" + \
 "***AVG***  *stock_name* - Get the average value of the most recent open entries for a given stock <stock_name>. If your latest transaction on the stock was a STC, an average of $0.00 will be returned. \n \n" + \
 "***OPEN*** - Get a list of all the stocks that currently have open entries (i.e., stocks that have not been STC'd). \n \n" + \
-"***HISTORY*** - Get a list of all the closed transactions from the past 30 days. \n \n" + \
-"***PSTC***  *stock_name* *partial_exit_price* - Make a partial exit on a stock at the price of <partial_exit_price>. NOTE - You can make 3 partial exits on an open entry where the 3rd exit will be noted as a STC. \n \n"
+"***HISTORY*** - Get a list of all the closed transactions from the past 30 days. \n \n"  + \
+"***TRANS***  *stock_name* - Get a list of all the transactions you've made with a given stock noted by <stock_name>. \n \n"

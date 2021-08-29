@@ -20,10 +20,16 @@ intents = discord.Intents.default()
 intents.members = True
 
 keep_alive()
-bot = commands.Bot(command_prefix=['++', '++ ', 'Venti!'], description='Kaze da!', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=['++'], description='Kaze da!', intents=intents, help_command=None)
+
+f = open("m.json", "a")
+f.write(os.getenv("FIREBASE_CRED"))
+f.close()
 
 birthday_db = FirebaseBirthdayDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_URL"))
 stocks_db = FirebaseStocksDB(os.getenv("PROJECT_ID"), os.getenv("FIREBASE_URL"))
+
+os.remove("m.json")
 
 bot.add_cog(Music(bot))
 bot.add_cog(Birthday(bot, birthday_db))

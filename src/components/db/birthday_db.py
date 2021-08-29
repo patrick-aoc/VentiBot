@@ -3,13 +3,14 @@ from firebase_admin import credentials
 from firebase_admin import db
 from firebase_admin import firestore
 
+import json
 import os
 
 class FirebaseBirthdayDB():
 
     def __init__(self, project_id, firebase_url):
       # Use the application default credentials
-      cred_obj = firebase_admin.credentials.Certificate(os.getenv("FIREBASE_CRED"))
+      cred_obj = firebase_admin.credentials.Certificate("./m.json")
       firebase_admin.initialize_app(cred_obj, {
           'projectId': project_id,
           'databaseURL': firebase_url
