@@ -79,11 +79,53 @@ class Stocks(commands.Cog):
         else:
           await ctx.send("Invalid usage of the command 'PSTC'. For more information, please specify '++HELP'")
 
+    @commands.command(name='BTC', invoke_without_subcommand=True)
+    @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
+    async def btc(self, ctx: commands.Context, *args):
+      """
+      BTC - Buy to Close
+
+      Make an entry for a stock at a given price for the user that 
+      called the command.
+      """
+      if "//" not in args:
+        if len(args) != 2:
+          await ctx.send("Invalid number of arguments specified for 'BTC'. For more information, please specify '++HELP'")
+        else:
+          await HLP.btc(ctx, self.firebase_db, args[0], args[1])  
+      else:
+        if args.index("//") == 2 and len(args) > 3:
+          notes = "".join("{} ".format(i) for i in args[3:])
+          await HLP.btc(ctx, self.firebase_db, args[0], args[1], notes)
+        else:
+          await ctx.send("Invalid usage of the command 'BTC'. For more information, please specify '++HELP'")
+
+    @commands.command(name='STO', invoke_without_subcommand=True)
+    @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
+    async def sto(self, ctx: commands.Context, *args):
+      """
+      STO - Sell to Open
+      
+      Close the entries for a stock at a given price for the user
+      that called the command.
+      """
+      if "//" not in args:
+        if len(args) != 2:
+          await ctx.send("Invalid number of arguments specified for 'STO'. For more information, please specify '++HELP'")
+        else:
+          await HLP.sto(ctx, self.firebase_db, args[0], args[1])  
+      else:
+        if args.index("//") == 2 and len(args) > 3:
+          notes = "".join("{} ".format(i) for i in args[3:])
+          await HLP.sto(ctx, self.firebase_db, args[0], args[1], notes)
+        else:
+          await ctx.send("Invalid usage of the command 'STO'. For more information, please specify '++HELP'")
+
     @commands.command(name='TRANS', invoke_without_subcommand=True)
     @commands.has_role(os.getenv("DISCORD_STOCK_WATCH"))
     async def notes(self, ctx: commands.Context, *args):
       """
-      NOTES
+      TRANS - Transactions
       """
       if len(args) != 1:
         await ctx.send("Invalid number of arguments specified for 'NOTES'. For more information, please specify '++HELP'")

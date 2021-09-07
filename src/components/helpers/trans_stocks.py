@@ -8,10 +8,10 @@ async def bto(ctx: commands.Context, firebase_db, stock, price, notes=""):
   if stock.upper() in firebase_db.get_symbols():
     try:
       px = _parse_price(price)
-      if px < 0:
+      if float(px) < 0:
         await ctx.send("Price cannot be negative")
       else:
-        if firebase_db.bto(stock, price, ctx.message.author.id, notes):
+        if firebase_db.bto(stock, px, ctx.message.author.id, notes):
           await ctx.send("Successfully bought to open (BTO) on the stock {} at the price ${} USD".format(stock, format(float(px), ".{}f".format(len(str(px).split(".")[1])))))
         else:
           await ctx.send("Failed to register the entry. It might be that your last transaction on this stock was a partial exit (PSTC).")
@@ -24,10 +24,10 @@ async def stc(ctx: commands.Context, firebase_db, stock, price, notes=""):
   if stock.upper() in firebase_db.get_symbols():
     try:
       px = _parse_price(price)
-      if px < 0:
+      if float(px) < 0:
         await ctx.send("Price cannot be negative")
       else:
-        if firebase_db.stc(stock, price, ctx.message.author.id, notes):
+        if firebase_db.stc(stock, px, ctx.message.author.id, notes):
           await ctx.send("Successfully sold to close (STC) on the stock {} at the price ${} USD".format(stock, format(float(px), ".{}f".format(len(str(px).split(".")[1])))))
         else:
           await ctx.send("Failed to register the entry. Either you have never BTO'd on the stock or your last transaction with the stock was a STC.")
@@ -39,10 +39,10 @@ async def stc(ctx: commands.Context, firebase_db, stock, price, notes=""):
 async def pstc(ctx: commands.Context, firebase_db, stock, price, notes=""):
   if stock.upper() in firebase_db.get_symbols():
     px = _parse_price(price)
-    if px < 0:
+    if float(px) < 0:
       await ctx.send("Price cannot be negative")
     else:
-      success, next_stc, ty = firebase_db.pstc(stock, ctx.message.author.id, price, notes)
+      success, next_stc, ty = firebase_db.pstc(stock, ctx.message.author.id, px, notes)
       if success:
 
         if ty == "PSTC":
@@ -59,6 +59,12 @@ async def pstc(ctx: commands.Context, firebase_db, stock, price, notes=""):
   else:
     await ctx.send("The stock '{}' does not exist in the index of exchanges I have cached (US/SZ)".format(stock))  
 
+async def btc(ctx: commands.Context, firebase_db, stock, price, notes=""):
+  pass
+
+async def sto(ctx: commands.Context, firebase_db, stock, price, notes=""):
+  pass
+  
 async def avg(ctx: commands.Context, firebase_db, stock):
   if stock.upper() in firebase_db.get_symbols():
     avg, count = firebase_db.avg(stock, ctx.message.author.id)
@@ -69,4 +75,4 @@ async def avg(ctx: commands.Context, firebase_db, stock):
 def _parse_price(price):
   rx = price.split(".")
   r = rx[1] if len(rx) == 2 else "{}.00".format(price)
-  return round(float(price), len(r)) if len(r) > 1 else round(float(price), 2)
+  return str(round(float(price), len(r))) if len(rx) > 1 else r

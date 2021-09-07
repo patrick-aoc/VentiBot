@@ -1,7 +1,9 @@
 from datetime import date, datetime
+from pathlib import Path
 
 import aiocron
 import discord
+import logging
 import os
 import youtube_dl
 
@@ -37,11 +39,29 @@ bot.add_cog(Stocks(bot, stocks_db))
 
 @bot.event
 async def on_ready():
-    print(date.today().isoweekday())
-    print(datetime.now().time())
-    print(datetime.today().strftime('%m/%d'))
-    print('Logged in as:\n{0.user.name}\n{0.user.id}'.format(bot))
+  chn = bot.get_channel(int(os.getenv("DISCORD_DEBUG")))
+  my_file = Path("./discord.log")
+  if my_file.is_file():  
+    await chn.send(file=discord.File("./discord.log"))
 
+  logger = logging.getLogger('discord')
+  logger.setLevel(logging.DEBUG)
+  handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+  handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+  logger.addHandler(handler)
+  
+  print(datetime.now().time())
+  print(datetime.today().strftime('%m/%d'))
+  print('Logged in as:\n{0.user.name}\n{0.user.id}'.format(bot))
+
+@bot.event
+async def on_error():
+  chn = bot.get_channel(int(os.getenv("DISCORD_DEBUG")))
+  await chn.send("owo")
+  my_file = Path("./discord.log")
+  if my_file.is_file():  
+    await chn.send(file=discord.File("./discord.log"))
+  
 @bot.event
 async def on_message_delete(message):
   chn = bot.get_channel(int(os.getenv("DISCORD_MSG_LOG")))
@@ -51,16 +71,16 @@ async def on_message_delete(message):
   embed.set_footer(text="Channel Origin - {}".format(str(message.channel)))
   await chn.send(embed=embed)
 
-@bot.event
-async def on_message_edit(message_before, message_after):
-  if "http" not in message_before.content and len(message_before.embeds) == 0:
-    chn = bot.get_channel(int(os.getenv("DISCORD_MSG_LOG")))
-    embed = discord.Embed(title='EDITED MESSAGE', color=discord.Color.orange())
-    embed.set_author(name=str(message_before.author))
-    embed.add_field(name="Old Message", value=message_before.content)
-    embed.add_field(name="New Message", value=message_after.content)
-    embed.set_footer(text="Channel Origin - {}".format(str(message_before.channel)))
-    await chn.send(embed=embed)
+# @bot.event
+# async def on_message_edit(message_before, message_after):
+#   if "http" not in message_before.content and len(message_before.embeds) == 0:
+#     chn = bot.get_channel(int(os.getenv("DISCORD_MSG_LOG")))
+#     embed = discord.Embed(title='EDITED MESSAGE', color=discord.Color.orange())
+#     embed.set_author(name=str(message_before.author))
+#     embed.add_field(name="Old Message", value=message_before.content)
+#     embed.add_field(name="New Message", value=message_after.content)
+#     embed.set_footer(text="Channel Origin - {}".format(str(message_before.channel)))
+#     await chn.send(embed=embed)
 
 @aiocron.crontab('0 14 * * *')
 async def birthday():
