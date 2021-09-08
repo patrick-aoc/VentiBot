@@ -30,23 +30,25 @@ class FirebaseStocksDB():
       if len(entries) != 0:
         last_entry = list(entries)[-1][1]
         
-        if last_entry["type"] == "PSTC":
+        # Can't BTO on a stock that has already been partially exited
+        # or if one is long w/ the stock
+        if last_entry["type"] == "PSTC" or last_entry["type"] == "STO":
           return added
-
-      try:
-        fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-        self._get_stock_ref(stock.upper(), user_id).push(
-              {
-                "stock_id": stock.upper(),
-                "price": price,
-                "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                "type": "BTO",
-                "notes": notes
-              }
-        )
-        added = True
-      except:
-        pass
+        
+        try:
+          fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+          self._get_stock_ref(stock.upper(), user_id).push(
+                {
+                  "stock_id": stock.upper(),
+                  "price": price,
+                  "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                  "type": "BTO",
+                  "notes": notes
+                }
+          )
+          added = True
+        except:
+          pass
       return added
 
     def stc(self, stock, price, user_id, notes=""):
@@ -56,7 +58,7 @@ class FirebaseStocksDB():
       if len(entries) != 0:
         last_entry = list(entries)[-1][1]
         
-        if last_entry["type"] != "STC":
+        if last_entry["type"] == "BTO" or last_entry["type"] == "PSTC":
           try:
             fmt = '%Y-%m-%d %H:%M:%S %Z%z'
             self._get_stock_ref(stock.upper(), user_id).push(
@@ -72,7 +74,55 @@ class FirebaseStocksDB():
           except:
             pass
       return added
+
+    def sto(self, stock, price, user_id, notes=""):
+      added = False
+      entries = self.list_entries(stock.upper(), user_id)
+
+      if len(entries) != 0:
+        last_entry = list(entries)[-1][1]
+        
+        if last_entry["type"] != "PSTC" and last_entry["type"] != "BTO":
+          try:
+            fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+            self._get_stock_ref(stock.upper(), user_id).push(
+                  {
+                    "stock_id": stock.upper(),
+                    "price": price,
+                    "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                    "type": "STO",
+                    "notes": notes
+                  }
+            )
+            added = True
+          except:
+            pass
+      return added
     
+    def btc(self, stock, price, user_id, notes=""):
+      added = False
+      entries = self.list_entries(stock.upper(), user_id)
+
+      if len(entries) != 0:
+        last_entry = list(entries)[-1][1]
+        
+        if last_entry["type"] == "STO":
+          try:
+            fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+            self._get_stock_ref(stock.upper(), user_id).push(
+                  {
+                    "stock_id": stock.upper(),
+                    "price": price,
+                    "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                    "type": "BTC",
+                    "notes": notes
+                  }
+            )
+            added = True
+          except:
+            pass
+      return added
+
     def avg(self, stock, user_id):
       entries = self.list_entries(stock.upper(), user_id)
       sm = 0
@@ -118,35 +168,36 @@ class FirebaseStocksDB():
       if len(entries) != 0:
         last_entry = list(entries)[-1][1]
 
-        # One cannot PSTC if their prev. transaction was an STC
-        if last_entry["type"] != "STC":
-          second_last_entry = None
+        if last_entry["type"] != "BTC" or last_entry["type"] != "STO":
+          # One cannot PSTC if their prev. transaction was an STC
+          if last_entry["type"] != "STC":
+            second_last_entry = None
 
-          # If one's 2nd last entry was a PSTC, we need to make
-          # sure that the individual is aware that a 3rd attempt to
-          # PSTC will result in an STC
-          try:
-            second_last_entry = list(entries)[-2][1]
-          except:
-            pass
+            # If one's 2nd last entry was a PSTC, we need to make
+            # sure that the individual is aware that a 3rd attempt to
+            # PSTC will result in an STC
+            try:
+              second_last_entry = list(entries)[-2][1]
+            except:
+              pass
 
-          try:
-            fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-            t = "PSTC" if last_entry["type"] == "BTO" or second_last_entry["type"] != "PSTC" else "STC"
-            self._get_stock_ref(stock.upper(), user_id).push(
-                  {
-                    "stock_id": stock.upper(),
-                    "price": price,
-                    "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                    "type": t,
-                    "notes": notes
-                  }
-            )
-            added = True
-            ty = t
-            next_stc = last_entry["type"] == "PSTC" and ty != "STC"
-          except:
-            pass
+            try:
+              fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+              t = "PSTC" if last_entry["type"] == "BTO" or second_last_entry["type"] != "PSTC" else "STC"
+              self._get_stock_ref(stock.upper(), user_id).push(
+                    {
+                      "stock_id": stock.upper(),
+                      "price": price,
+                      "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                      "type": t,
+                      "notes": notes
+                    }
+              )
+              added = True
+              ty = t
+              next_stc = last_entry["type"] == "PSTC" and ty != "STC"
+            except:
+              pass
       return (added, next_stc, ty)
 
     def get_symbols(self):
