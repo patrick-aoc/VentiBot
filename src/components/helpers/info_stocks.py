@@ -17,11 +17,12 @@ async def open(ctx: commands.Context, firebase_db):
       for i in reversed(stock_entries):
         entry = i[1]
 
-        if entry["type"] == "BTO" or entry["type"] == "PSTC":
-          avg, count = firebase_db.avg(key, ctx.message.author.id)
+        if entry["type"] == "BTO" or entry["type"] == "PSTC" or entry["type"] == "STO":
+          avg, count, te = firebase_db.avg(key, ctx.message.author.id)
+          t = "Long" if entry["type"] == "BTO" or entry["type"] == "PSTC" else "Short"
           partials = firebase_db.count_partial(key, ctx.message.author.id)
           pstring = "".join("${} USD; ".format(i) for i in partials)
-          open_pos += "\n{} ..........  ${} USD (over {} entries)".format(key, format(float(avg), ".{}f".format(len(str(avg).split(".")[1]))), count)
+          open_pos += "\n{} ..........  ${} USD (over {} entries)".format(key, format(float(avg), ".{}f".format(len(str(avg).split(".")[1]))), t, count)
 
           if pstring != "":
             open_pos += " .......... {}".format(pstring)
@@ -36,8 +37,8 @@ async def open(ctx: commands.Context, firebase_db):
   else:
     au_name = ctx.guild.get_member(ctx.message.author.id).name
 
-    if len(pages) == 0 and open_pos != "":
-      embed = create_embed("{}'s Plays".format(au_name), "Open Positions - (Stock, Average, Partial Exit(s) (if any))", open_pos)
+    if (len(pages) == 0 and open_pos != "") or (len(pages) == 1 and open_pos == ""):
+      embed = create_embed("{}'s Plays".format(au_name), "Open Positions - (Stock, Average, Position Type, Partial Exit(s) (if any))", open_pos)
       await ctx.send(embed=embed)
     else:
       embeds = []
@@ -77,12 +78,13 @@ async def history(ctx: commands.Context, firebase_db):
       # if they've been closed and are also within the date range
       for i in reversed(stock_entries):
         entry = i[1]
-        if entry["type"] == "STC":
+        if entry["type"] == "STC" or entry["type"] == "BTC":
           fmt = '%Y-%m-%d'
           cdt = datetime.strptime(datetime.now(timezone("US/Eastern")).strftime(fmt), fmt)
           dt = datetime.strptime(entry["date"].split()[0], fmt)
           if (cdt - dt).days <= 30:
-            hist += "\n\n{} .......... ${} USD .......... ".format(entry["date"].split()[0], format(float(entry["price"]), ".{}f".format(len(entry["price"].split(".")[1]))))
+            t = "Long" if entry["type"] == "STC" else "Short"
+            hist += "\n\n{} ({}) .......... ${} USD .......... ".format(entry["date"].split()[0], t, format(float(entry["price"]), ".{}f".format(len(entry["price"].split(".")[1]))))
             e += 1
             continue
         else:
@@ -97,7 +99,7 @@ async def history(ctx: commands.Context, firebase_db):
             money = "${} USD; ".format(format(float(entry["price"]), ".{}f".format(len(entry["price"].split(".")[1]))))
             if entry["type"] == "PSTC":
               pstcs += money
-            elif entry["type"] == "BTO":
+            elif entry["type"] == "BTO" or entry["type"] == "STO":
               if prev_type == "PSTC":
                 hist += "{} .......... ".format(pstcs)
                 pstcs = ""

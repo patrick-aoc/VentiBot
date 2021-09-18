@@ -31,24 +31,24 @@ class FirebaseStocksDB():
         last_entry = list(entries)[-1][1]
         
         # Can't BTO on a stock that has already been partially exited
-        # or if one is long w/ the stock
+        # or if one has shorted the stock
         if last_entry["type"] == "PSTC" or last_entry["type"] == "STO":
           return added
         
-        try:
-          fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-          self._get_stock_ref(stock.upper(), user_id).push(
-                {
-                  "stock_id": stock.upper(),
-                  "price": price,
-                  "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                  "type": "BTO",
-                  "notes": notes
-                }
-          )
-          added = True
-        except:
-          pass
+      try:
+        fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+        self._get_stock_ref(stock.upper(), user_id).push(
+              {
+                "stock_id": stock.upper(),
+                "price": price,
+                "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                "type": "BTO",
+                "notes": notes
+              }
+        )
+        added = True
+      except:
+        pass
       return added
 
     def stc(self, stock, price, user_id, notes=""):
@@ -82,21 +82,24 @@ class FirebaseStocksDB():
       if len(entries) != 0:
         last_entry = list(entries)[-1][1]
         
-        if last_entry["type"] != "PSTC" and last_entry["type"] != "BTO":
-          try:
-            fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-            self._get_stock_ref(stock.upper(), user_id).push(
-                  {
-                    "stock_id": stock.upper(),
-                    "price": price,
-                    "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
-                    "type": "STO",
-                    "notes": notes
-                  }
-            )
-            added = True
-          except:
-            pass
+        # Can't short a stock if it's currently long
+        if last_entry["type"] == "PSTC" or last_entry["type"] == "BTO":
+          return added
+
+      try:
+        fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+        self._get_stock_ref(stock.upper(), user_id).push(
+              {
+                "stock_id": stock.upper(),
+                "price": price,
+                "date": datetime.now(timezone("US/Eastern")).strftime(fmt),
+                "type": "STO",
+                "notes": notes
+              }
+        )
+        added = True
+      except:
+        pass
       return added
     
     def btc(self, stock, price, user_id, notes=""):
@@ -127,11 +130,13 @@ class FirebaseStocksDB():
       entries = self.list_entries(stock.upper(), user_id)
       sm = 0
       count = 0
+      t = ""
 
       if len(entries) != 0:
         for i in reversed(entries):
           entry = i[1]
-          if entry["type"] == "BTO":
+          if entry["type"] == "BTO" or entry["type"] == "STO":
+            t = "Long" if entry["type"] == "BTO" else "Short"
             sm += float(entry["price"])
             count += 1
             continue
@@ -144,7 +149,7 @@ class FirebaseStocksDB():
             else:
               break
       
-      return (sm / count, count) if count > 0 else (0.00, 0)
+      return (sm / count, count, t) if count > 0 else (0.00, 0, "")
 
     def count_partial(self, stock, user_id):
       entries = self.list_entries(stock.upper(), user_id)

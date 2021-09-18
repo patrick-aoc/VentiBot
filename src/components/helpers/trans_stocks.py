@@ -95,8 +95,8 @@ async def sto(ctx: commands.Context, firebase_db, stock, price, notes=""):
   
 async def avg(ctx: commands.Context, firebase_db, stock):
   if stock.upper() in firebase_db.get_symbols():
-    avg, count = firebase_db.avg(stock, ctx.message.author.id)
-    await ctx.send("Your average for the stock {} is ${} USD (based on {} entries)".format(stock.upper(), format(float(avg), ".{}f".format(len(str(avg).split(".")[1]))), count)) 
+    avg, count, te = firebase_db.avg(stock, ctx.message.author.id)
+    await ctx.send("Your average for the stock {} is ${} USD (based on {} entries). Your position is currently {}".format(stock.upper(), format(float(avg), ".{}f".format(len(str(avg).split(".")[1]))), count, te)) 
   else:
     await ctx.send(_dne(stock))  
 
